@@ -20,7 +20,7 @@ crop_dir = home_dir + 'crops/'
 train_dir = home_dir + 'train/'
 test_dir = home_dir + 'test/'
 test_angles = {0: (30, 330), 1: (60, 300), 2: (90, 270), 3: (120, 240), 4: (150, 210), 5: (180, 180)}
-wide_image_ids = {11458, 12004}
+wide_image_ids = {}
 
 
 def init_dir():
@@ -36,17 +36,15 @@ def make_dir(directories):
             os.makedirs(path_name)
 
 
-def create_new_seed_index():
-    seed_image_ids = [random.randint(4000, 13828) for x in range(250)]
-    pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-
-
+def create_new_index(count, total_images, index_name):
+    seed_image_ids = [random.randint(0, total_images) for x in range(count)]
+    pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
 def get_seed_image_ids():
-    return get_test_image_ids()
+    # return get_test_image_ids()
 
-    # seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-    # return sorted(set(seed_image_ids))
+    seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+    return sorted(set(seed_image_ids))
 
     # test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
     # seed_image_ids = seed_image_ids + test_image_ids[0:180]
@@ -167,7 +165,6 @@ def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training =
 
 
 def create_test_lmdbs(test_id):
-    # test_image_ids = [x for x in range(13927)]
     test_image_ids = get_test_image_ids()
     filedata = []
     lmdb_dir = test_dir + str(test_id) + '/'
@@ -357,17 +354,16 @@ def retrain_widened_seed(seed_image_id, cut_off):
 
 # *****************************************************************************
 # Instructions from scratch:
-# init_dir()
-# create_new_seed_index()
-# seeds = get_seed_image_ids()- wide_image_ids()
-# create_single_lmdbs(seeds)
-# create_test_lmdbs(0)
-# run_script(train_dir + 'train_all.sh')
-# run_script(test_dir + 'test_all.sh')
-# read_test(get_seed_image_ids(),0)
-# read_all_results(10)
-
-
+init_dir()
+create_new_index(10, 13926, 'seed_image_ids')
+create_new_index(100, 13926, 'test_image_ids')
+seeds = get_seed_image_ids() - wide_image_ids
+create_single_lmdbs(seeds)
+create_test_lmdbs(0)
+run_script(train_dir + 'train_all.sh')
+run_script(test_dir + 'test_all.sh')
+read_test(get_seed_image_ids(), 0)
+read_all_results(10)
 
 # *****************************************************************************
 # Instructions to run after the first model is created:
