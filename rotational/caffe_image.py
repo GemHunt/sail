@@ -1,10 +1,13 @@
 """This module is a group of functions for dealing with images in general and how they relate to Caffe."""
+import PIL.Image
 import math
+import numpy as np
 import os
 import random
 import sys
 
 import cv2
+from caffe.proto import caffe_pb2
 
 sys.path.append('/home/pkrush/caffe/python')
 sys.path.append('/home/pkrush/digits')
@@ -15,15 +18,10 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import numpy as np
-import PIL.Image
-
 if __name__ == '__main__':
     dirname = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, os.path.join(dirname, '..', '..'))
 
-# Import digits.config first to set the path to Caffe
-from caffe.proto import caffe_pb2
 
 
 def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size):
@@ -80,26 +78,6 @@ def rotate_matrix(angle, center_x, center_y, mat):
         rotated[num, 0] = rotated_x
         rotated[num, 1] = rotated_y
     return rotated
-
-
-def get_angled_crops(crop, crop_size):
-    crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-    crop = cv2.resize(crop, (crop_size, crop_size), interpolation=cv2.INTER_AREA)
-
-    crops = [None] * 360
-
-    for angle in range(0, 360):
-        # rotated = rotate(crop.copy(),angle)
-        pts1 = np.float32([[440, 295], [595, 290], [440, 305], [595, 310]])
-        rotated_mat = rotate_matrix(angle, 300, 300, pts1)
-
-        pts2 = np.float32([[0, 0], [28, 0], [0, 14], [28, 14]])
-        M = cv2.getPerspectiveTransform(rotated_mat, pts2)
-        dst = cv2.warpPerspective(crop, M, (28, 14))
-
-        crops[angle] = dst
-
-    return crops
 
 
 def save_image(image, filename):
