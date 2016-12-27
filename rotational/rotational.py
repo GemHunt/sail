@@ -14,13 +14,14 @@ import create_lmdb_rotate_whole_image
 import image_set
 import summarize_rotated_crops
 
-home_dir = '~/cent-models/'
+home_dir = '/home/pkrush/cent-models/'
 data_dir = home_dir + 'metadata/'
-crop_dir = home_dir + 'crops/'
+html_dir = home_dir + 'metadata/html/'
+crop_dir = '/home/pkrush/cents/'
 train_dir = home_dir + 'train/'
 test_dir = home_dir + 'test/'
 test_angles = {0: (30, 330), 1: (60, 300), 2: (90, 270), 3: (120, 240), 4: (150, 210), 5: (180, 180)}
-wide_image_ids = {}
+wide_image_ids = []
 
 
 def init_dir():
@@ -41,10 +42,8 @@ def create_new_index(count, total_images, index_name):
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
 def get_seed_image_ids():
-    # return get_test_image_ids()
-
     seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-    return sorted(set(seed_image_ids))
+    return sorted(set(seed_image_ids) - set(wide_image_ids))
 
     # test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
     # seed_image_ids = seed_image_ids + test_image_ids[0:180]
@@ -54,7 +53,7 @@ def get_seed_image_ids():
 
 def get_test_image_ids():
     test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
-    return sorted(set(test_image_ids))
+    return sorted(set(test_image_ids) - set(wide_image_ids))
 
     # test_image_ids += get_seed_image_ids()
     # test_image_ids += wide_image_ids()
@@ -86,10 +85,10 @@ def create_single_lmdbs(seed_image_ids):
     shutil.copyfile(weight_filename, train_dir + weight_filename)
     shell_filenames = []
     for image_id in seed_image_ids:
+        print 'Creating single lmdb for ' + str(image_id)
         filedata = [[image_id, crop_dir + str(image_id) + '.jpg', 0]]
         lmdb_dir = train_dir + str(image_id) + '/'
         create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 100, -1, True, False)
-        print 'Creating single lmdb for ' + str(image_id)
         copy_train_files(lmdb_dir)
         shell_filename = create_train_script(lmdb_dir, train_dir + weight_filename, False)
         shell_filenames.append(shell_filename)
@@ -324,7 +323,7 @@ def save_graph():
 
 def read_all_results(cut_off=0, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
     image_set.read_results(cut_off, data_dir, seed_image_ids, seeds_share_test_images, remove_widened_seeds)
-    #image_set.create_composite_images(crop_dir, data_dir, 140,10,10)
+    image_set.create_composite_images(crop_dir, html_dir, 140, 10, 10)
 
 
 def link_seed_by_graph(seed_image_id, min_connections, max_depth):
@@ -355,14 +354,14 @@ def retrain_widened_seed(seed_image_id, cut_off):
 # *****************************************************************************
 # Instructions from scratch:
 init_dir()
-create_new_index(10, 13926, 'seed_image_ids')
-create_new_index(100, 13926, 'test_image_ids')
-seeds = get_seed_image_ids() - wide_image_ids
-create_single_lmdbs(seeds)
-create_test_lmdbs(0)
-run_script(train_dir + 'train_all.sh')
-run_script(test_dir + 'test_all.sh')
-read_test(get_seed_image_ids(), 0)
+# create_new_index(10, 13926, 'seed_image_ids')
+# create_new_index(100, 13926, 'test_image_ids')
+# seeds = get_seed_image_ids()
+# create_single_lmdbs(seeds)
+# create_test_lmdbs(0)
+# run_script(train_dir + 'train_all.sh')
+# run_script(test_dir + 'test_all.sh')
+# read_test(get_seed_image_ids(), 0)
 read_all_results(10)
 
 # *****************************************************************************

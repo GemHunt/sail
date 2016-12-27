@@ -16,19 +16,17 @@ export PYTHONPATH=~/caffe/python:$PYTHONPATH
 
 
 **Tasks:**
-* start over and go for heads & tails again
-* document how this is done
+* Start over and go for heads & tails again
+* Document how this is done
 * Only resize once.
 * Use crop_size again.
 * Remove 'pkrush' from the repo
 
-**Put the png files in a separate dir:**
-* Delete the old pngs before new ones are made
-* Build a html file for the png’s and sort by seed results.
+Set up png's for serving:
+* Build a html file for the png’s
 * Tar the png folder.
-* Zero pad the image_id.
 * Use a less bold font?
-* Fix sorting on creating the png images
+* sort by size?
 
 **Just have 2 test groups(dump widening):**
 * 0:  -29 to 29

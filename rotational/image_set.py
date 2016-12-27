@@ -1,4 +1,6 @@
 import cPickle as pickle
+import os
+import shutil
 from collections import namedtuple
 
 import cv2
@@ -21,6 +23,7 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
     # columns = ['seed_image_id', 'image_id', 'angle', 'max_value']
     image_ids_with_highest_max_value = {}
     results_dict.clear()
+    seeds_to_remove = []
 
     if remove_widened_seeds:
         seeds_to_remove = widened_seeds
@@ -282,7 +285,16 @@ def get_most_connected_seeds(G, edges, start_node, most_connected_seeds, total_p
     return most_connected_seeds
 
 
-def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids=None):
+def clean_dir(dir):
+    if os.path.exists(dir):
+        shutil.rmtree(dir)
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+
+def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None):
+    clean_dir(html_dir)
     if seed_image_ids is None:
         results = results_dict
     else:
@@ -306,25 +318,25 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
             cv2.putText(crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
             images.append(crop)
         composite_image = ci.get_composite_image(images, rows, cols)
-        cv2.imwrite(data_dir + str(seed_image_id) + '.png', composite_image)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
 
 
-def create_composite_image(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids):
+def create_composite_image(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids):
     images = []
     for seed_image_id in seed_image_ids:
         crop = ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0)
         images.append(crop)
     composite_image = ci.get_composite_image(images, rows, cols)
-    cv2.imwrite(data_dir + 'composite_image.png', composite_image)
+    cv2.imwrite(html_dir + 'composite_image.png', composite_image)
 
 
-def create_composite_image_from_filedata(crop_dir, data_dir, crop_size, rows, cols, filedata):
+def create_composite_image_from_filedata(crop_dir, html_dir, crop_size, rows, cols, filedata):
     images = []
     for image_id, filename, angle_offset in filedata:
         crop = ci.get_rotated_crop(crop_dir, image_id, crop_size, angle_offset)
         images.append(crop)
     composite_image = ci.get_composite_image(images, rows, cols)
-    cv2.imwrite(data_dir + 'composite_image.png', composite_image)
+    cv2.imwrite(html_dir + 'composite_image.png', composite_image)
 
 def save_widened_seeds(data_dir, seed_image_id,cut_off):
     widened_seeds = []
