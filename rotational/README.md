@@ -3,16 +3,26 @@ Self-Supervised Rotational Clustering Networks
 
 A fast tool to group coin designs and determine orientation angles with no manual labeling
 
-**Usage:**
-* Nvidia DIGITS needs to be installed and tested
+**Installation:**
+* Nvidia DIGITS needs to be installed on ubuntu 14.04 and tested. See:
+* https://github.com/GemHunt/CoinSorter/blob/master/scripts/AWSCaffeDigetsBuild.md
 * If you're using bash (on a Mac or GNU/Linux distro), add this to your ~/.bashrc
 export PYTHONPATH=~/caffe/python:$PYTHONPATH
 
+**Usage:**
+* See rotational.py
+* For sample images(13927 cent coin images, 180MB total):
+* http://www.gemhunt.com/cents.tar.gz
+
+
 **Tasks:**
+* start over and go for heads & tails again
+* document how this is done
 * Only resize once.
 * Use crop_size again.
+* Remove 'pkrush' from the repo
 
-**Put the png file in a separate dir:**
+**Put the png files in a separate dir:**
 * Delete the old pngs before new ones are made
 * Build a html file for the png’s and sort by seed results.
 * Tar the png folder.

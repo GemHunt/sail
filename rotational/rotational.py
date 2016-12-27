@@ -14,7 +14,7 @@ import create_lmdb_rotate_whole_image
 import image_set
 import summarize_rotated_crops
 
-home_dir = '/home/pkrush/lmdb-files/'
+home_dir = '~/cent-models/'
 data_dir = home_dir + 'metadata/'
 crop_dir = home_dir + 'crops/'
 train_dir = home_dir + 'train/'
@@ -93,7 +93,7 @@ def create_single_lmdbs(seed_image_ids):
         create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 100, -1, True, False)
         print 'Creating single lmdb for ' + str(image_id)
         copy_train_files(lmdb_dir)
-        shell_filename = create_train_script(lmdb_dir, train_dir + weight_filename)
+        shell_filename = create_train_script(lmdb_dir, train_dir + weight_filename, False)
         shell_filenames.append(shell_filename)
     create_script_calling_script(train_dir + 'train_all.sh', shell_filenames)
 
@@ -337,7 +337,7 @@ def link_seed_by_graph(seed_image_id, min_connections, max_depth):
     # read_all_results(5,[4866],seeds_share_test_images=False,remove_widened_seeds=True)
     most_connected_seeds = image_set.find_most_connected_seeds(data_dir, seed_image_id, min_connections, max_depth)
     if len(most_connected_seeds) != 0:
-        image_set.create_composite_image(crop_dir, data_dir, 130, 10, 30, most_connected_seeds.iterkeys())
+        image_set.create_composite_image(crop_dir, data_dir, 130, 30, 10, most_connected_seeds.iterkeys())
         for seed_image_id, values in most_connected_seeds.iteritems():
             print values
             filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.jpg', values[2]])
@@ -346,68 +346,44 @@ def link_seed_by_graph(seed_image_id, min_connections, max_depth):
 
 
 def retrain_widened_seed(seed_image_id, cut_off):
+    # This did not seem to add much to the model
+    # usage: retrain_widened_seed(7855,27)
     max_value_cutoff = 10
     read_all_results(max_value_cutoff, seeds_share_test_images=False, remove_widened_seeds=True)
     filedata = get_single_lmdb_filedata(seed_image_id, cut_off)
     run_train_test(seed_image_id, filedata, max_value_cutoff, test_id=5,multi_image_training =  True)
     read_all_results(max_value_cutoff, seeds_share_test_images=False, remove_widened_seeds=True)
-    image_set.create_composite_images(crop_dir, data_dir,crop_size = 140,rows=10,cols=50)
+    image_set.create_composite_images(crop_dir, data_dir, crop_size=140, rows=50, cols=10)
 
-
-retrain_widened_seed(7855,27)
-
-
-#read_all_results(10, seeds_share_test_images=False, remove_widened_seeds=True)
-#image_set.create_composite_images(crop_dir, data_dir, 120,10,50)
-#image_set.save_widened_seeds(data_dir, 8058,32)
-#image_set.save_widened_seeds(data_dir, 7855,19)
-
-
-'''
-# Good ones to link: 8058,7855
-seed_image_id = 8058
-filedata = link_seed_by_graph(seed_image_id,min_connections=10, max_depth=18)
-image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=10, cols=50, filedata=filedata)
-
-if 1==0:
-    if len(filedata) > 5:
-        max_value_cutoff = 10
-        run_train_test(seed_image_id, filedata, max_value_cutoff, test_id=5,multi_image_training =  True)
-        run_test(seed_image_id, max_value_cutoff, test_id=5)
-        read_all_results(15)
-        image_set.create_composite_images(crop_dir, data_dir,crop_size = 140,rows=10,cols=50)
-    else:
-        print 'Not enough seeds found'
-'''
-
-
-
+# *****************************************************************************
 # Instructions from scratch:
+# init_dir()
 # create_new_seed_index()
 # seeds = get_seed_image_ids()- wide_image_ids()
 # create_single_lmdbs(seeds)
 # create_test_lmdbs(0)
 # run_script(train_dir + 'train_all.sh')
 # run_script(test_dir + 'test_all.sh')
-
 # read_test(get_seed_image_ids(),0)
 # read_all_results(10)
 
 
-# Second Try Script:
-# I renamed lmdb-files to lmdbfiles100
-# I also copied the crops and 2 pickles for seeds and test IDs
-# I cropped 56x56 from center, dropped using the mask, and dropped the resize.
-# init_dir()
+
+# *****************************************************************************
+# Instructions to run after the first model is created:
+# copy the 2 pickles for seeds and test IDs?
+# how does this change:
 # seeds = get_seed_image_ids()
 # create_single_lmdbs(seeds)
 # create_test_lmdbs(0)
 # run_script(train_dir + 'train_all.sh')
 # run_script(test_dir + 'test_all.sh')
 # read_test(get_seed_image_ids(),0)
-
 # read_all_results(16)
 
+
+
+# *****************************************************************************
 # Pick top seed with the most image results over 20 and highest of those results:
 # widen_model(9813,5,23)
 # create_all_test_lmdbs()
@@ -419,3 +395,26 @@ if 1==0:
 # Test on new test set and make 30 new seeds low performers of each set.
 # Create test sets from the 500 lowest performers of each set.
 # create_new_indexes(30, 500)
+
+
+
+# *****************************************************************************
+# Link widen seeds by linking:
+# read_all_results(10, seeds_share_test_images=False, remove_widened_seeds=True)
+# image_set.create_composite_images(crop_dir, data_dir, 120,10,50)
+# image_set.save_widened_seeds(data_dir, 8058,32)
+# image_set.save_widened_seeds(data_dir, 7855,19)
+
+# seed_image_id = 8058
+# filedata = link_seed_by_graph(seed_image_id,min_connections=10, max_depth=18)
+# image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=50, cols=10, filedata=filedata)
+
+# if 1==0:
+#    if len(filedata) > 5:
+#        max_value_cutoff = 10
+#        run_train_test(seed_image_id, filedata, max_value_cutoff, test_id=5,multi_image_training =  True)
+#        run_test(seed_image_id, max_value_cutoff, test_id=5)
+#        read_all_results(15)
+#        image_set.create_composite_images(crop_dir, data_dir,crop_size = 140,rows=50,cols=10)
+#    else:
+#        print 'Not enough seeds found'
