@@ -1,5 +1,5 @@
 # sail
-S.A.I.L.(Semi Automated Image Labeling)
+S.A.I.L. (Semi Automated Image Labeling)
 
 The goal of this system is to greatly reduce the amount manual labeling needed to build image classification models.
 
