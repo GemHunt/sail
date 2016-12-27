@@ -3,14 +3,14 @@ Self-Supervised Rotational Clustering Networks
 
 A fast tool to group coin designs and determine orientation angles with no manual labeling
 
+**Usage:**
+* Nvidia DIGITS needs to be installed and tested
+* If you're using bash (on a Mac or GNU/Linux distro), add this to your ~/.bashrc
+export PYTHONPATH=~/caffe/python:$PYTHONPATH
+
 **Tasks:**
 * Only resize once.
 * Use crop_size again.
-* Add paths permanently:
-* sys.path.append('/home/pkrush/caffe/python')
-* sys.path.append('/home/pkrush/digits')
-* Does this fix imports caffe imports errors?
-
 
 **Put the png file in a separate dir:**
 * Delete the old pngs before new ones are made
@@ -20,10 +20,9 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * Use a less bold font?
 * Fix sorting on creating the png images
 
-**Just have 2 test groups:**
+**Just have 2 test groups(dump widening):**
 * 0:  -29 to 29
 * 1: All
-
 
 
 
