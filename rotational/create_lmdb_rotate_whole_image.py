@@ -1,42 +1,26 @@
+import numpy as np
 import os
 import random
 import shutil
-import sys
 import time
 from random import randint
 
 import cv2
+import lmdb
+from caffe.proto import caffe_pb2
 
 import caffe_image as ci
 import caffe_lmdb
 
-sys.path.append('/home/pkrush/caffe/python')
-sys.path.append('/home/pkrush/digits')
-
-# Find the best implementation available
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-import lmdb
-import numpy as np
-
-if __name__ == '__main__':
-    dirname = os.path.dirname(os.path.realpath(__file__))
-    sys.path.insert(0, os.path.join(dirname, '..', '..'))
-
-# Import digits.config first to set the path to Caffe
-from caffe.proto import caffe_pb2
-
 
 def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=True, create_files=False):
     start_time = time.time()
-
+    img_dir = '/home/pkrush/img-files'
     max_images = 99999999
     crop_size = 28
     before_rotate_size = 56
     classes = 360
+    mask = None
     if os.path.exists(lmdb_dir):
         shutil.rmtree(lmdb_dir)
 
@@ -44,8 +28,6 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         os.makedirs(lmdb_dir)
 
     if create_files:
-        img_dir = '/home/pkrush/img-files'
-
         if os.path.exists(img_dir):
             shutil.rmtree(img_dir)
         if not os.path.exists(img_dir):
@@ -115,12 +97,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         crop = crops[random_index]
         image_id = filedata[random_index][0]
         angle_offset = filedata[random_index][2]
-
         angle_to_rotate = angle + angle_offset
-        if angle_to_rotate > 360:
-            angle_to_rotate - 360
-
-        rot_image = ci.get_whole_rotated_image(crop, mask, angle_to_rotate, crop_size)
+        rot_image = ci.get_whole_rotated_image(crop, mask, angle_to_rotate, crop_size, before_rotate_size)
 
         if create_files:
             cv2.imwrite(img_dir + '/' + str(class_angle + 1000) + '/' + str(id) + str(angle).zfill(5) + '.png',
