@@ -3,6 +3,29 @@ Self-Supervised Rotational Clustering Networks
 
 A fast tool to group coin designs and determine orientation angles with no manual labeling
 
+**Tasks:**
+* Only resize once.
+* Use crop_size again.
+* Add paths permanently:
+* sys.path.append('/home/pkrush/caffe/python')
+* sys.path.append('/home/pkrush/digits')
+* Does this fix imports caffe imports errors?
+
+
+**Put the png file in a separate dir:**
+* Delete the old pngs before new ones are made
+* Build a html file for the png’s and sort by seed results.
+* Tar the png folder.
+* Zero pad the image_id.
+* Use a less bold font?
+* Fix sorting on creating the png images
+
+**Just have 2 test groups:**
+* 0:  -29 to 29
+* 1: All
+
+
+
 
 **Used & Works Great:**
 * Use best exclusive test result models with non-exclusive test images
