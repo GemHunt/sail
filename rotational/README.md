@@ -10,19 +10,30 @@ A fast tool to group coin designs and determine orientation angles with no manua
 export PYTHONPATH=~/caffe/python:$PYTHONPATH
 
 **Usage:**
-* See rotational.py
-* For sample images(13927 cent coin images, 180MB total):
+* Execution starts in rotational.py
+* Download and un-tar sample images(13927 cent coin images, 180MB total):
 * http://www.gemhunt.com/cents.tar.gz
+* Run build_init_rotational_networks() in rotational.py
+* (for now) Pick the best model from cent-models/metadata/html
+
 
 
 **Tasks:**
 * Start over and go for heads & tails again
 * Document how this is done
+
+
+
+**Later Tasks:**
 * Only resize once.
 * Use crop_size again.
 * Remove 'pkrush' from the repo
+* does remove_widened_seeds need to be an option?
+* in save_widened_seeds: This should be widened_images
+    (images that correspond to a widened seed)
+* create images should not be in read_all_results
 
-Set up png's for serving:
+**Set up png's for serving:**
 * Build a html file for the png’s
 * Tar the png folder.
 * Use a less bold font?
@@ -31,7 +42,6 @@ Set up png's for serving:
 **Just have 2 test groups(dump widening):**
 * 0:  -29 to 29
 * 1: All
-
 
 
 **Used & Works Great:**
