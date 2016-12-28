@@ -36,9 +36,9 @@ def make_dir(directories):
         if not os.path.exists(path_name):
             os.makedirs(path_name)
 
-
 def create_new_index(count, total_images, index_name):
-    seed_image_ids = [random.randint(0, total_images) for x in range(count)]
+    # seed_image_ids = [random.randint(0, total_images) for x in range(count)]
+    seed_image_ids = range(0, 500)
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
 def get_seed_image_ids():
@@ -249,9 +249,8 @@ def widen_model(seed_image_id, max_test_id, max_value_cutoff):
     for test_id in range(0, max_test_id + 1):
         for x in range(0, 2):
             filedata = get_single_lmdb_filedata(seed_image_id, max_value_cutoff)
-            run_train_test(seed_image_id, filedata, max_value_cutoff, test_id)
+            run_train_test(seed_image_id, filedata, max_value_cutoff, test_id, True)
     image_set.create_composite_images(crop_dir, data_dir, 120, 8, 20)
-
 
 def run_train_test(seed_image_id, filedata,max_value_cutoff, test_id, multi_image_training = False):
     create_single_lmdb(seed_image_id, filedata, test_id, multi_image_training)
@@ -341,9 +340,9 @@ def retrain_widened_seed(seed_image_id, cut_off):
 
 def build_init_rotational_networks():
     # This function is meant to be edited and run manually for now.
-    init_dir()
-    create_new_index(20, 13926, 'seed_image_ids')
-    create_new_index(500, 13926, 'test_image_ids')
+    # init_dir()
+    # create_new_index(20, 13926, 'seed_image_ids')
+    #create_new_index(500, 13926, 'test_image_ids')
     seeds = get_seed_image_ids()
     create_single_lmdbs(seeds)
     create_test_lmdbs(0)
@@ -353,12 +352,12 @@ def build_init_rotational_networks():
     read_all_results(10, seeds_share_test_images=False, remove_widened_seeds=True)
 
 
-def link_seed_by_graph(seed_image_id, cut_off, min_connections, max_depth):
+def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
     image_set.read_results(cut_off, data_dir, seeds_share_test_images=False, remove_widened_seeds=True)
-    image_set.save_widened_seeds(data_dir, seed_image_id, cut_off)
+    image_set.save_widened_seeds(data_dir, seed_id, cut_off)
     image_set.read_results(cut_off, data_dir, seeds_share_test_images=True, remove_widened_seeds=True)
     save_graph()
-    most_connected_seeds = image_set.find_most_connected_seeds(data_dir, seed_image_id, min_connections, max_depth)
+    most_connected_seeds = image_set.find_most_connected_seeds(data_dir, seed_id, min_connections, max_depth)
     filedata = []
     if len(most_connected_seeds) != 0:
         image_set.create_composite_image(crop_dir, data_dir, 130, 30, 10, most_connected_seeds.iterkeys())
@@ -366,20 +365,18 @@ def link_seed_by_graph(seed_image_id, cut_off, min_connections, max_depth):
             print values
             filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.jpg', values[2]])
     print 'Count of images linked by graph:', len(most_connected_seeds)
-    if len(filedata) > 5:
+    if len(filedata) > 500:
         image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=50, cols=10, filedata=filedata)
-        run_train_test(seed_image_id, filedata, cut_off, test_id=5, multi_image_training=True)
-        run_test(seed_image_id, cut_off, test_id=5)
-        read_all_results(15)
+        run_train_test(seed_id, filedata, cut_off, test_id=5, multi_image_training=True)
+        run_test(seed_id, cut_off, test_id=5)
+        read_all_results(cut_off)
     else:
         print 'Not enough seeds found'
 
 
-# build_init_rotational_networks()
+build_init_rotational_networks()
 # create_all_test_lmdbs()
-# test_all([6952])
-link_seed_by_graph(6952, 10.5, min_connections=1, max_depth=3)
-
+#link_seed_by_graph(6952, 10.5, min_connections=10, max_depth=18)
 
 
 # *****************************************************************************

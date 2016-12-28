@@ -243,16 +243,16 @@ def get_most_connected_seeds(G, edges, start_node, most_connected_seeds, total_p
                 test_image_id = node2
                 test_max_value = max_value
                 test_image_angle = angle_total
-                # print '                       ', path, angle_total, '\n'
+                #print '                       ', path, angle_total, '\n'
             else:
                 angles[tuple(path)] = angle_total
-                # print '    ', path, angle_total, '\n'
+                #print '    ', path, angle_total, '\n'
         good_paths_count = 0
         for saved_path, angle in angles.iteritems():
             if abs(test_image_angle - angle) < 3:
                 good_paths_count += 1
             else:
-                # print saved_path, angle, test_image_angle
+                print saved_path, angle, test_image_angle
                 bad_paths.append(saved_path)
 
         max_value_ave = max_value_path_total / len(edge_paths)

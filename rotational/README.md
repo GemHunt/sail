@@ -17,11 +17,12 @@ export PYTHONPATH=~/caffe/python:$PYTHONPATH
 * (for now) Pick the best model from cent-models/metadata/html
 
 
-
 **Tasks:**
 * Start over and go for heads & tails again
 * Document how this is done
-
+* Run back home:
+* build out the network for 500 seeds and test
+* Fix: something in widen_model deleted all metadata.
 
 
 **Later Tasks:**
