@@ -16,14 +16,10 @@ export PYTHONPATH=~/caffe/python:$PYTHONPATH
 * Run build_init_rotational_networks() in rotational.py
 * (for now) Pick the best model from cent-models/metadata/html
 
-
 **Tasks:**
 * Start over and go for heads & tails again
 * Document how this is done
-* Run back home:
-* build out the network for 500 seeds and test
-* Fix: something in widen_model deleted all metadata.
-
+* Fix: something in widen_model deleted all metadata?
 
 **Later Tasks:**
 * Only resize once.
@@ -77,7 +73,7 @@ export PYTHONPATH=~/caffe/python:$PYTHONPATH
 * Hardware Reject/Online Training: In practice I could reject and rescan parts that don’t have a class.
 
 **Circular Lighting:**
-* This is a big one as it can build a full class from a single scan. Light every frame as the part is going by the camera with WS2812 LED Strips to get 8-20 different shadows. Use the 3 color channels in the LED to scan 3 angles at once! Also I could take all lights on pictures, and pictures with lights different heights. Not fancy, just 3 light strips loops. One loop horizontal, one vertical, and one under for separate backlighting shots. They don’t have to be mounted perfectly. The LEDs can switch every frame. You check the every n frames to see if the times is correct. The belt would always be moving. So both the camera and the lighting would be different models. I could make the models every image for itself then I could ensemble them. This is cool because it will show when the models are bad. The reason for this is also because this setup is going to work not just for coins, but other part types as well with no changes.
+* This is a big one as it can build a full class from a single scan. Light every frame with a different LED from a different angle as the part is moving under the camera. Use WS2812 LED Strips to get 8-30 different shadows. Use the 3 color channels in the LED to scan 3 angles at once! Also I could take all lights on pictures, and pictures with lights different heights. Not fancy, just 3 light strips loops. One loop horizontal, one vertical, and one under for separate backlighting shots. They don’t have to be mounted perfectly. The LEDs can switch every frame. You check the every n frames to see if the times is correct. The belt would always be moving. So both the camera and the lighting would be different models. I could make the models every image for itself then I could ensemble them. This is cool because it will show when the models are bad. The reason for this is also because this setup is going to work not just for coins, but other part types as well with no changes.
 
 **Back lighting**:
 * Scan screws without an image at all:1 bit backlighting from 8 different angles would the same as 256 gray but really it should be blob input instead of an image. 

@@ -21,8 +21,6 @@ crop_dir = '/home/pkrush/cents/'
 train_dir = home_dir + 'train/'
 test_dir = home_dir + 'test/'
 test_angles = {0: (30, 330), 1: (60, 300), 2: (90, 270), 3: (120, 240), 4: (150, 210), 5: (180, 180)}
-wide_image_ids = []
-
 
 def init_dir():
     directories = [home_dir, data_dir, crop_dir, train_dir, test_dir]
@@ -43,20 +41,20 @@ def create_new_index(count, total_images, index_name):
 
 def get_seed_image_ids():
     seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-    return sorted(set(seed_image_ids) - set(wide_image_ids))
+    return sorted(set(seed_image_ids) - set(image_set.widened_seeds))
 
     # test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
     # seed_image_ids = seed_image_ids + test_image_ids[0:180]
-    # seed_image_ids = seed_image_ids + wide_image_ids()
+    # seed_image_ids = seed_image_ids + image_set.widened_seeds()
     # pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 
 
 def get_test_image_ids():
     test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
-    return sorted(set(test_image_ids) - set(wide_image_ids))
+    return sorted(set(test_image_ids) - set(image_set.widened_seeds))
 
     # test_image_ids += get_seed_image_ids()
-    # test_image_ids += wide_image_ids()
+    # test_image_ids += image_set.widened_seeds()
     # test_image_ids = list(set(test_image_ids))
     # pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
@@ -322,7 +320,7 @@ def save_graph():
 
 def read_all_results(cut_off=0, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
     image_set.read_results(cut_off, data_dir, seed_image_ids, seeds_share_test_images, remove_widened_seeds)
-    image_set.create_composite_images(crop_dir, html_dir, 140, 10, 10)
+    image_set.create_composite_images(crop_dir, html_dir, 140, 50, 10)
 
 
 def retrain_widened_seed(seed_image_id, cut_off):
@@ -346,6 +344,7 @@ def build_init_rotational_networks():
     seeds = get_seed_image_ids()
     create_single_lmdbs(seeds)
     create_test_lmdbs(0)
+    create_all_test_lmdbs()
     run_script(train_dir + 'train_all.sh')
     run_script(test_dir + 'test_all.sh')
     read_test(get_seed_image_ids(), 0)
@@ -360,13 +359,13 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
     most_connected_seeds = image_set.find_most_connected_seeds(data_dir, seed_id, min_connections, max_depth)
     filedata = []
     if len(most_connected_seeds) != 0:
-        image_set.create_composite_image(crop_dir, data_dir, 130, 30, 10, most_connected_seeds.iterkeys())
+        # image_set.create_composite_image(crop_dir, data_dir, 130, 30, 10, most_connected_seeds.iterkeys())
         for seed_image_id, values in most_connected_seeds.iteritems():
             print values
             filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.jpg', values[2]])
     print 'Count of images linked by graph:', len(most_connected_seeds)
-    if len(filedata) > 500:
-        image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=50, cols=10, filedata=filedata)
+    image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=50, cols=10, filedata=filedata)
+    if len(filedata) > 9:
         run_train_test(seed_id, filedata, cut_off, test_id=5, multi_image_training=True)
         run_test(seed_id, cut_off, test_id=5)
         read_all_results(cut_off)
@@ -374,9 +373,16 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-build_init_rotational_networks()
-# create_all_test_lmdbs()
-#link_seed_by_graph(6952, 10.5, min_connections=10, max_depth=18)
+# build_init_rotational_networks()
+# 416,137,259,178,265
+# image_set.read_results(10, data_dir, seeds_share_test_images=True, remove_widened_seeds=True)
+# image_set.create_composite_images(crop_dir, html_dir, 140, 10, 10)
+# link_seed_by_graph(178, 10, min_connections=8, max_depth=18)
+# link_seed_by_graph(416, 10, min_connections=5, max_depth=18)
+read_all_results(10, seeds_share_test_images=True, remove_widened_seeds=False)
+
+
+
 
 
 # *****************************************************************************

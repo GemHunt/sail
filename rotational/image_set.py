@@ -15,7 +15,7 @@ Group = namedtuple('Group', 'group_id starting_seed_id images')
 seed_groups = []
 #widened_seeds = [3893, 5107, 6280, 9813, 4152,8924]
 #remove_results_of_these_seeds = [8058,7855]
-widened_seeds = []
+widened_seeds = [178, 137]
 remove_results_of_these_seeds = []
 
 def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
