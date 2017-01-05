@@ -40,6 +40,25 @@ def create_new_index(count, total_images, index_name):
     #seed_image_ids = [0, 100]
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
+
+def create_seed_and_test_random():
+    crops = []
+    image_ids = []
+    for filename in glob.iglob(crop_dir + '*.png'):
+        crops.append(filename)
+
+    for filename in crops:
+        renamed = filename.replace("_", "")
+        image_id = int(renamed.replace('.png', '').replace('/home/pkrush/cents/', ''))
+        renamed = crop_dir + str(image_id) + '.png'
+        os.rename(filename, renamed)
+        rand_int = random.randint(0, 4)
+        if rand_int == 0:
+            image_ids.append(image_id)
+    pickle.dump(image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+    pickle.dump(image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+
+
 def get_seed_image_ids():
     seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
     return sorted(set(seed_image_ids) - set(image_set.widened_seeds))
@@ -351,11 +370,11 @@ def retrain_widened_seed(seed_image_id, cut_off):
 
 def build_init_rotational_networks():
     # This function is meant to be edited and run manually for now.
-    # init_dir()
+    init_dir()
     # create_new_index(20, 13926, 'seed_image_ids')
     #create_new_index(500, 13926, 'test_image_ids')
-    #seeds = get_seed_image_ids()
-    #create_single_lmdbs(seeds)
+    seeds = get_seed_image_ids()
+    create_single_lmdbs(seeds)
     create_test_lmdbs(0)
     create_all_test_lmdbs()
     run_script(train_dir + 'train_all.sh')
@@ -411,20 +430,22 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 
 
 #Multi-Point ************************************************************************************
+# This did not work
 #seed_image_ids = [0, 100]
 #pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 #rename_multi_point_crops()
 
-#create_single_lmdbs([0])
-#seed_image_ids = range(0,18)
-
-# create_single_lmdbs([100])
-# seed_image_ids = range(100,116)
+# create_all_test_lmdbs()
+# image_id = 100
+# create_single_lmdbs([image_id])
+# seed_image_ids = range(image_id,116)
 # filedata = []
 # for seed_image_id in seed_image_ids:
 #     filedata.append([seed_image_id,crop_dir + str(seed_image_id) + '.png',0])
-# create_single_lmdb(0, filedata, test_id=0,multi_image_training = True)
+# run_train_test(image_id, filedata, 10, test_id=5, multi_image_training=True)
+# read_all_results(10)
 
-build_init_rotational_networks()
+# run_test(100, 10, test_id=5)
+# read_all_results(10)
 
-
+#build_init_rotational_networks()
