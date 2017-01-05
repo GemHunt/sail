@@ -35,8 +35,9 @@ def make_dir(directories):
             os.makedirs(path_name)
 
 def create_new_index(count, total_images, index_name):
-    # seed_image_ids = [random.randint(0, total_images) for x in range(count)]
-    seed_image_ids = range(0, 500)
+    seed_image_ids = [random.randint(0, total_images) for x in range(count)]
+    #seed_image_ids = range(0, 100)
+    #seed_image_ids = [0, 100]
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
 def get_seed_image_ids():
@@ -58,18 +59,30 @@ def get_test_image_ids():
     # test_image_ids = list(set(test_image_ids))
     # pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
-
 def rename_crops():
     crops = []
-    for filename in glob.iglob(crop_dir + '*.jpg'):
+    for filename in glob.iglob(crop_dir + '*.png'):
         crops.append([random.random(), filename])
     crops.sort()
     pickle.dump(crops, open(data_dir + 'copper_crops.p', "wb"))
     key = 0
     for rand, filename in crops:
         key += 1
-        os.rename(filename, crop_dir + str(key) + '.jpg')
+        os.rename(filename, crop_dir + str(key) + '.png')
 
+def rename_multi_point_crops():
+    crops = []
+    test_image_ids = []
+    for filename in glob.iglob(crop_dir + '*.png'):
+        crops.append(filename)
+    crops.sort()
+    for filename in crops:
+        renamed = filename.replace("_","")
+        image_id = int(renamed.replace('.png','').replace('/home/pkrush/cents/',''))
+        renamed = crop_dir + str(image_id) + '.png'
+        os.rename(filename,renamed)
+        test_image_ids.append(image_id)
+    pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
 def copy_file(filename, path_name):
     with open(filename, 'r') as myfile:
@@ -84,7 +97,7 @@ def create_single_lmdbs(seed_image_ids):
     shell_filenames = []
     for image_id in seed_image_ids:
         print 'Creating single lmdb for ' + str(image_id)
-        filedata = [[image_id, crop_dir + str(image_id) + '.jpg', 0]]
+        filedata = [[image_id, crop_dir + str(image_id) + '.png', 0]]
         lmdb_dir = train_dir + str(image_id) + '/'
         create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 100, -1, True, False)
         copy_train_files(lmdb_dir)
@@ -137,11 +150,11 @@ def get_single_lmdb_filedata(seed_id, max_value_cutoff):
     # best_results_by_angle_group[rounded_angle] = [max_value, angle, image_id]
     # values = best_results_by_angle_group.values()
 
-    filedata.append([seed_id, crop_dir + str(seed_id) + '.jpg', 0])
+    filedata.append([seed_id, crop_dir + str(seed_id) + '.png', 0])
     for image_id, test_values in values.iteritems():
         max_value, angle = test_values
         if max_value > max_value_cutoff:
-            filedata.append([image_id, crop_dir + str(image_id) + '.jpg', angle])
+            filedata.append([image_id, crop_dir + str(image_id) + '.png', angle])
     return filedata
 
 def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training = False ):
@@ -166,7 +179,7 @@ def create_test_lmdbs(test_id):
     filedata = []
     lmdb_dir = test_dir + str(test_id) + '/'
     for image_id in test_image_ids:
-        filedata.append([image_id, crop_dir + str(image_id) + '.jpg', 0])
+        filedata.append([image_id, crop_dir + str(image_id) + '.png', 0])
 
     create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 3, test_id, False, False)
 
@@ -341,8 +354,8 @@ def build_init_rotational_networks():
     # init_dir()
     # create_new_index(20, 13926, 'seed_image_ids')
     #create_new_index(500, 13926, 'test_image_ids')
-    seeds = get_seed_image_ids()
-    create_single_lmdbs(seeds)
+    #seeds = get_seed_image_ids()
+    #create_single_lmdbs(seeds)
     create_test_lmdbs(0)
     create_all_test_lmdbs()
     run_script(train_dir + 'train_all.sh')
@@ -362,7 +375,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         # image_set.create_composite_image(crop_dir, data_dir, 130, 30, 10, most_connected_seeds.iterkeys())
         for seed_image_id, values in most_connected_seeds.iteritems():
             print values
-            filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.jpg', values[2]])
+            filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', values[2]])
     print 'Count of images linked by graph:', len(most_connected_seeds)
     image_set.create_composite_image_from_filedata(crop_dir, data_dir, 140, rows=50, cols=10, filedata=filedata)
     if len(filedata) > 9:
@@ -379,10 +392,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 # image_set.create_composite_images(crop_dir, html_dir, 140, 10, 10)
 # link_seed_by_graph(178, 10, min_connections=8, max_depth=18)
 # link_seed_by_graph(416, 10, min_connections=5, max_depth=18)
-read_all_results(10, seeds_share_test_images=True, remove_widened_seeds=False)
-
-
-
+#read_all_results(10, seeds_share_test_images=True, remove_widened_seeds=False)
 
 
 # *****************************************************************************
@@ -400,5 +410,21 @@ read_all_results(10, seeds_share_test_images=True, remove_widened_seeds=False)
 # create_new_indexes(30, 500)
 
 
+#Multi-Point ************************************************************************************
+#seed_image_ids = [0, 100]
+#pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+#rename_multi_point_crops()
+
+#create_single_lmdbs([0])
+#seed_image_ids = range(0,18)
+
+# create_single_lmdbs([100])
+# seed_image_ids = range(100,116)
+# filedata = []
+# for seed_image_id in seed_image_ids:
+#     filedata.append([seed_image_id,crop_dir + str(seed_image_id) + '.png',0])
+# create_single_lmdb(0, filedata, test_id=0,multi_image_training = True)
+
+build_init_rotational_networks()
 
 

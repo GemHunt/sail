@@ -64,7 +64,7 @@ def summarize_whole_rotated_model_results(filename, seed_image_id, low_angle, hi
     # filenames = []
     filtered_results = []
     for key, max_value, angle, total_value in sorted_results:
-        # filename = '/home/pkrush/cents/' + str(key) + '.jpg'
+        # filename = '/home/pkrush/cents/' + str(key) + '.png'
         # filenames.append([filename, angle])
         if (angle < low_angle) or (angle > high_angle):
             filtered_results.append([seed_image_id, key, angle, max_value])

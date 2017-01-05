@@ -12,7 +12,6 @@ from caffe.proto import caffe_pb2
 import caffe_image as ci
 import caffe_lmdb
 
-
 def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=True, create_files=False):
     start_time = time.time()
     img_dir = '/home/pkrush/img-files'
@@ -50,7 +49,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     id = -1
     crops = []
 
-    # for filename in glob.iglob('/home/pkrush/copper/test/*.jpg'):
+    # for filename in glob.iglob('/home/pkrush/copper/test/*.png'):
     for image_id, filename, angle_offset in filedata:
         print image_id
         # imageid = filename[-9:]
@@ -59,7 +58,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         if id > max_images - 1:
             break
 
-        # crop = cv2.imread('/home/pkrush/copper/test.jpg')
+        # crop = cv2.imread('/home/pkrush/copper/test.png')
         crop = cv2.imread(filename)
         if crop is None:
             continue

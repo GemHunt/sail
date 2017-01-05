@@ -6,8 +6,8 @@ A fast tool to group coin designs and determine orientation angles with no manua
 **Installation:**
 * Nvidia DIGITS needs to be installed on ubuntu 14.04 and tested. See:
 * https://github.com/GemHunt/CoinSorter/blob/master/scripts/AWSCaffeDigetsBuild.md
-* If you're using bash (on a Mac or GNU/Linux distro), add this to your ~/.bashrc
-export PYTHONPATH=~/caffe/python:$PYTHONPATH
+* If you're using bash (on a Mac or GNU/Linux distro), add this line to your ~/.bashrc file: 
+    export PYTHONPATH=~/caffe/python:$PYTHONPATH
 
 **Usage:**
 * Execution starts in rotational.py
