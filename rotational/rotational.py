@@ -444,7 +444,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 # for seed_image_id in seed_image_ids:
 #     filedata.append([seed_image_id,crop_dir + str(seed_image_id) + '.png',0])
 # run_train_test(image_id, filedata, 10, test_id=0, multi_image_training=True)
-#read_all_results(10)
+# read_all_results(10)
 
 # run_test(100, 10, test_id=5)
 # read_all_results(10)
