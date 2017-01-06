@@ -35,13 +35,17 @@ def make_dir(directories):
             os.makedirs(path_name)
 
 def create_new_index(count, total_images, index_name):
+    # This assumes there are no gaps in the image_ids
     seed_image_ids = [random.randint(0, total_images) for x in range(count)]
     #seed_image_ids = range(0, 100)
     #seed_image_ids = [0, 100]
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
 
-def create_seed_and_test_random():
+def create_seed_and_test_random(factor):
+    # Only use 1/factor of the crop images
+    # for example there are 10000 crops and a factor of 100
+    #then only 100 of them would be the random seed and test images.
     crops = []
     image_ids = []
     for filename in glob.iglob(crop_dir + '*.png'):
@@ -52,7 +56,7 @@ def create_seed_and_test_random():
         image_id = int(renamed.replace('.png', '').replace('/home/pkrush/cents/', ''))
         renamed = crop_dir + str(image_id) + '.png'
         os.rename(filename, renamed)
-        rand_int = random.randint(0, 4)
+        rand_int = random.randint(0, factor)
         if rand_int == 0:
             image_ids.append(image_id)
     pickle.dump(image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
@@ -284,11 +288,11 @@ def widen_model(seed_image_id, max_test_id, max_value_cutoff):
 
 def run_train_test(seed_image_id, filedata,max_value_cutoff, test_id, multi_image_training = False):
     create_single_lmdb(seed_image_id, filedata, test_id, multi_image_training)
+    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
     for test_id in range(0, test_id + 1):
         create_test_script(seed_image_id, test_id, multi_image_training)
-    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-    read_test([seed_image_id], test_id)
+        run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
+        read_test([seed_image_id], test_id)
     # in the metadata dir rm *.png
     image_set.read_results(max_value_cutoff, data_dir, [seed_image_id])
 
@@ -352,7 +356,7 @@ def save_graph():
 
 def read_all_results(cut_off=0, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
     image_set.read_results(cut_off, data_dir, seed_image_ids, seeds_share_test_images, remove_widened_seeds)
-    image_set.create_composite_images(crop_dir, html_dir, 140, 50, 10)
+    image_set.create_composite_images(crop_dir, html_dir, 140, 15, 10)
 
 
 def retrain_widened_seed(seed_image_id, cut_off):
@@ -370,14 +374,16 @@ def retrain_widened_seed(seed_image_id, cut_off):
 
 def build_init_rotational_networks():
     # This function is meant to be edited and run manually for now.
-    init_dir()
-    # create_new_index(20, 13926, 'seed_image_ids')
+    # This starts from scratch: Only square images need to exist in the crop dir
+    # init_dir()
+    #create_new_index(20, 13926, 'seed_image_ids')
     #create_new_index(500, 13926, 'test_image_ids')
-    seeds = get_seed_image_ids()
-    create_single_lmdbs(seeds)
+    # create_seed_and_test_random(25)
+    # seeds = get_seed_image_ids()
+    #create_single_lmdbs(seeds)
     create_test_lmdbs(0)
-    create_all_test_lmdbs()
-    run_script(train_dir + 'train_all.sh')
+    # create_all_test_lmdbs()
+    #run_script(train_dir + 'train_all.sh')
     run_script(test_dir + 'test_all.sh')
     read_test(get_seed_image_ids(), 0)
     read_all_results(10, seeds_share_test_images=False, remove_widened_seeds=True)
@@ -407,6 +413,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 # *****************************************************************************
 # normal use:
 # build_init_rotational_networks()
+#read_all_results(17,seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
 # 416,137,259,178,265
 # image_set.read_results(10, data_dir, seeds_share_test_images=True, remove_widened_seeds=True)
@@ -432,21 +439,14 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 
 
 #Multi-Point ************************************************************************************
-#seed_image_ids = [0, 100]
-#pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 #rename_multi_point_crops()
 
 # create_all_test_lmdbs()
-# image_id = 100
+image_id = 12600
 # create_single_lmdbs([image_id])
-# seed_image_ids = range(image_id,116)
-# filedata = []
-# for seed_image_id in seed_image_ids:
-#     filedata.append([seed_image_id,crop_dir + str(seed_image_id) + '.png',0])
-# run_train_test(image_id, filedata, 10, test_id=0, multi_image_training=True)
-# read_all_results(10)
-
-# run_test(100, 10, test_id=5)
-# read_all_results(10)
-
-#build_init_rotational_networks()
+seed_image_ids = range(12600, 12616)
+filedata = []
+for seed_image_id in seed_image_ids:
+    filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
+run_train_test(image_id, filedata, 17, test_id=5, multi_image_training=True)
+read_all_results(10, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
