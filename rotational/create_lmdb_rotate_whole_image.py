@@ -12,6 +12,7 @@ from caffe.proto import caffe_pb2
 import caffe_image as ci
 import caffe_lmdb
 
+
 def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=True, create_files=False):
     start_time = time.time()
     img_dir = '/home/pkrush/img-files'
@@ -67,7 +68,11 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         # crop = crop[100:156,100:156]
 
         # images are 256 x 256, Center is 128,128, crop 160x160 from center:
-        crop = crop[48:208, 48:208]
+        # crop = crop[48:208, 48:208]
+
+
+        # images are 448 x 448, Center is 224,224  crop 160x160 from center:
+        crop = crop[144:304, 144:304]
 
         crop = cv2.resize(crop, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
         crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)

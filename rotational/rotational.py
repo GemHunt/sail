@@ -404,8 +404,10 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
     else:
         print 'Not enough seeds found'
 
-
+# *****************************************************************************
+# normal use:
 # build_init_rotational_networks()
+
 # 416,137,259,178,265
 # image_set.read_results(10, data_dir, seeds_share_test_images=True, remove_widened_seeds=True)
 # image_set.create_composite_images(crop_dir, html_dir, 140, 10, 10)
@@ -430,7 +432,6 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 
 
 #Multi-Point ************************************************************************************
-# This did not work
 #seed_image_ids = [0, 100]
 #pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 #rename_multi_point_crops()
@@ -442,8 +443,8 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 # filedata = []
 # for seed_image_id in seed_image_ids:
 #     filedata.append([seed_image_id,crop_dir + str(seed_image_id) + '.png',0])
-# run_train_test(image_id, filedata, 10, test_id=5, multi_image_training=True)
-# read_all_results(10)
+# run_train_test(image_id, filedata, 10, test_id=0, multi_image_training=True)
+#read_all_results(10)
 
 # run_test(100, 10, test_id=5)
 # read_all_results(10)
