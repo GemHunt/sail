@@ -238,7 +238,7 @@ def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training =
     lmdb_dir = train_dir + str(seed_image_id) + '/'
 
     #create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(100 + (0.5 * test_id)), -1, True, False)
-    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(200 + (2 * test_id)), -1, True, False)
+    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(100 + (2 * test_id)), -1, True, False)
     copy_train_files(lmdb_dir,multi_image_training)
     create_train_script(lmdb_dir, weight_filename_copy,multi_image_training)
     print 'Done in %s seconds' % (time.time() - start_time,)
@@ -498,17 +498,17 @@ start_time = time.time()
 # seed_image_ids = range(6100, 6116)
 image_id = 14300
 # seed_image_ids = range(14300, 14317)
-#
-# create_single_lmdbs([image_id])
+# cutoff = 10
+# # create_single_lmdbs([image_id])
 # filedata = []
 # for seed_image_id in seed_image_ids:
 #     filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
 # run_train_test(image_id, filedata, cutoff, 5, True)
 
 # Check out the results then widen the seed to include all crops for each coin:
-# cutoff = 20
-# filedata = get_single_lmdb_filedata(image_id, cutoff,add_multi_point_crops=True)
-# run_train_test(image_id, filedata, cutoff, 5, True)
+cutoff = 10
+filedata = get_single_lmdb_filedata(image_id, cutoff, add_multi_point_crops=True)
+run_train_test(image_id, filedata, cutoff, 5, True)
 
 read_test([6100, 12600, 14300], 5)
 read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
