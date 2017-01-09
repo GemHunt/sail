@@ -63,6 +63,18 @@ def create_seed_and_test_random(factor):
     pickle.dump(image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
 
+def create_seed_and_test_from_multi_point():
+    save_multi_point_ids()
+    test_image_ids = []
+    seed_image_ids = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+
+    for coin_id, image_ids in seed_image_ids.iteritems():
+        test_image_id = image_ids[random.randint(0, len(image_ids) - 1)]
+        test_image_ids.append(coin_id * 100 + test_image_id)
+    pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+    pickle.dump(test_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+
+
 def get_seed_image_ids():
     seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
     return sorted(set(seed_image_ids) - set(image_set.widened_seeds))
@@ -92,6 +104,24 @@ def rename_crops():
     for rand, filename in crops:
         key += 1
         os.rename(filename, crop_dir + str(key) + '.png')
+
+
+def save_multi_point_ids():
+    crops = []
+    multi_point_ids = {}
+    for filename in glob.iglob(crop_dir + '*.png'):
+        crops.append(filename)
+    crops.sort()
+    for filename in crops:
+        renamed = filename.replace("_", "")
+        image_id = int(renamed.replace('.png', '').replace('/home/pkrush/cents/', ''))
+        coin_id = int(image_id / 100)
+        image_id = image_id % 100
+        if coin_id not in multi_point_ids.iterkeys():
+            multi_point_ids[coin_id] = []
+        multi_point_ids[coin_id].append(image_id)
+    pickle.dump(multi_point_ids, open(data_dir + 'multi_point_ids.pickle', "wb"))
+
 
 def rename_multi_point_crops():
     crops = []
@@ -156,9 +186,11 @@ def create_train_script(lmdb_dir, weight_filename,multi_image_training):
     return shell_filename
 
 
-def get_single_lmdb_filedata(seed_id, max_value_cutoff):
+def get_single_lmdb_filedata(seed_id, max_value_cutoff, add_multi_point_crops=False):
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     filedata = []
+    expanded_filedata = []
+    coin_ids = []
     values = seeds[seed_id]
 
     # this is handy for large groups (heads,tails)
@@ -174,11 +206,26 @@ def get_single_lmdb_filedata(seed_id, max_value_cutoff):
     # values = best_results_by_angle_group.values()
 
     filedata.append([seed_id, crop_dir + str(seed_id) + '.png', 0])
+
     for image_id, test_values in values.iteritems():
         max_value, angle = test_values
         if max_value > max_value_cutoff:
             filedata.append([image_id, crop_dir + str(image_id) + '.png', angle])
+
+    if add_multi_point_crops:
+        seed_image_ids = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+        for test_image_id, image_path, angle in filedata:
+            coin_id = int(test_image_id / 100)
+            if coin_id in coin_ids:
+                continue
+            coin_ids.append(coin_id)
+            for crop_id in seed_image_ids[coin_id]:
+                expanded_filedata.append(
+                    [coin_id * 100 + crop_id, crop_dir + str(coin_id * 100 + crop_id) + '.png', angle])
+        filedata = expanded_filedata
+
     return filedata
+
 
 def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training = False ):
     start_time = time.time()
@@ -198,6 +245,7 @@ def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training =
 
 
 def create_test_lmdbs(test_id):
+    print "Create_test_lmdbs for testID:" + str(test_id)
     test_image_ids = get_test_image_ids()
     filedata = []
     lmdb_dir = test_dir + str(test_id) + '/'
@@ -292,10 +340,6 @@ def run_train_test(seed_image_id, filedata,max_value_cutoff, test_id, multi_imag
     for test_id in range(0, test_id + 1):
         create_test_script(seed_image_id, test_id, multi_image_training)
         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-        read_test([seed_image_id], test_id)
-    # in the metadata dir rm *.png
-    image_set.read_results(max_value_cutoff, data_dir, [seed_image_id])
-
 
 def run_test(seed_image_id, max_value_cutoff, test_id):
     for test_id in range(0, test_id + 1):
@@ -439,14 +483,35 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 
 
 #Multi-Point ************************************************************************************
-#rename_multi_point_crops()
-
+start_time = time.time()
+# init_dir()
+# rename_multi_point_crops()
+# create_seed_and_test_from_multi_point()
+# #So there is 145 tests about 1/15 of the total.
+#
 # create_all_test_lmdbs()
-image_id = 12600
+# create_test_lmdbs(0)
+
+# image_id = 12600
+# seed_image_ids = range(12600, 12616)
+# image_id = 6100
+# seed_image_ids = range(6100, 6116)
+image_id = 14300
+# seed_image_ids = range(14300, 14317)
+#
 # create_single_lmdbs([image_id])
-seed_image_ids = range(12600, 12616)
-filedata = []
-for seed_image_id in seed_image_ids:
-    filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
-run_train_test(image_id, filedata, 17, test_id=5, multi_image_training=True)
-read_all_results(10, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+# filedata = []
+# for seed_image_id in seed_image_ids:
+#     filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
+# run_train_test(image_id, filedata, cutoff, 5, True)
+
+# Check out the results then widen the seed to include all crops for each coin:
+# cutoff = 20
+# filedata = get_single_lmdb_filedata(image_id, cutoff,add_multi_point_crops=True)
+# run_train_test(image_id, filedata, cutoff, 5, True)
+
+read_test([6100, 12600, 14300], 5)
+read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+
+# read_all_results(5, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+print 'Done in %s seconds' % (time.time() - start_time,)
