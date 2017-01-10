@@ -4,6 +4,7 @@ A set of functions to test out self supervised rotated coin image models
 
 import cPickle as pickle
 import glob
+import numpy as np
 import operator
 import os
 import random
@@ -458,7 +459,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def find_multi_point_errors():
+def get_multi_point_error_test_image_ids():
     # Find all test_image_ids that don't match the major class
     # Find all test_image_ids that the angle is off where the major class is correct
     # Rotation all in abs(rot) < 5. Adjust diff for 360 switch over.
@@ -467,7 +468,8 @@ def find_multi_point_errors():
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     coin_results = {}
     bad_coin_ids = {}
-    bad_class_test_images_ids = []
+    multi_point_error_test_image_ids = []
+
 
     for seed_image_id, images in seeds.iteritems():
         for test_image_id, values in images.iteritems():
@@ -478,35 +480,43 @@ def find_multi_point_errors():
             coin_results[coin_id].append([test_image_id, seed_image_id, max_value, angle])
 
     for coin_id, values in coin_results.iteritems():
-        first_angle = values[0][3]
+        # With 14-17 images per coin id 6 is about the middle
+        # first_good_class_angle = 0
+        angles = []
         seed_image_id_counts = {}
         for test_values in values:
             seed_image_id = test_values[1]
+            angles.append(test_values[3])
             if seed_image_id not in seed_image_id_counts.iterkeys():
                 seed_image_id_counts[seed_image_id] = 0
             seed_image_id_counts[seed_image_id] += 1
 
         major_seed_image_id = max(seed_image_id_counts.iteritems(), key=operator.itemgetter(1))[0]
+        median_angle = np.median(angles)
 
         for test_values in values:
             test_image_id = test_values[0]
             seed_image_id = test_values[1]
             test_angle = test_values[3]
+
             if seed_image_id != major_seed_image_id:
                 # if coin_id not in bad_coin_ids.iterkeys():
                 # bad_coin_ids[coin_id] = 1
                 # bad_coin_ids[coin_id] += 1
-                bad_class_test_images_ids.append(test_image_id)
+                multi_point_error_test_image_ids.append(test_image_id)
                 continue
-            test_angle_difference = abs(first_angle - test_angle)
-            if test_angle_difference > 359:
-                test_angle_difference -= 360
-            if test_angle_difference > 10:
+            # if first_good_class_angle == 0:
+            #    first_good_class_angle = test_angle
+            angle_tolerance = 10
+            test_angle_difference = abs(median_angle - test_angle)
+            if test_angle_difference > 359 - angle_tolerance:
+                test_angle_difference = abs(test_angle_difference - 360)
+            if test_angle_difference > angle_tolerance:
                 if coin_id not in bad_coin_ids.iterkeys():
-                    bad_coin_ids[coin_id] = 1
+                    bad_coin_ids[coin_id] = 0
                 bad_coin_ids[coin_id] += 1
-    print bad_coin_ids
-    print bad_class_test_images_ids
+                multi_point_error_test_image_ids.append(test_image_id)
+    return multi_point_error_test_image_ids
 
 
 # *****************************************************************************
@@ -574,7 +584,7 @@ start_time = time.time()
 
 # ********
 # Step 3:
-# Check out all test images
+# Check out all test image results
 seeds = [6100, 12600, 14300]
 # create_seed_and_test_random(0)
 # create_all_test_lmdbs()
@@ -584,8 +594,10 @@ seeds = [6100, 12600, 14300]
 #         create_test_script(seed_image_id, test_id, True)
 #         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
 # read_test(seeds, 5)
-#read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
-
-find_multi_point_errors()
+image_set.read_results(0, data_dir, seeds_share_test_images=False)
+multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+print 'The following test_image_ids where taking out of the image:'
+print multi_point_error_test_image_ids
+image_set.create_composite_images(crop_dir, html_dir, 140, 150, 10, None, multi_point_error_test_image_ids)
 print 'Done in %s seconds' % (time.time() - start_time,)

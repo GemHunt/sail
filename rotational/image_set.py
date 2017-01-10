@@ -294,7 +294,7 @@ def clean_dir(dir):
         os.makedirs(dir)
 
 
-def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None):
+def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None):
     clean_dir(html_dir)
     if seed_image_ids is None:
         results = results_dict
@@ -309,7 +309,8 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
         results = []
         for image_id, values in seed_values.iteritems():
             max_value, angle = values
-            results.append([image_id, max_value, angle])
+            if image_id not in remove_image_ids:
+                results.append([image_id, max_value, angle])
 
         sorted_results = sorted(results, key=lambda result: result[1], reverse=True)
         for image_id, max_value, angle in sorted_results:
