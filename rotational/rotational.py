@@ -4,6 +4,7 @@ A set of functions to test out self supervised rotated coin image models
 
 import cPickle as pickle
 import glob
+import operator
 import os
 import random
 import shutil
@@ -456,6 +457,58 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
     else:
         print 'Not enough seeds found'
 
+
+def find_multi_point_errors():
+    # Find all test_image_ids that don't match the major class
+    # Find all test_image_ids that the angle is off where the major class is correct
+    # Rotation all in abs(rot) < 5. Adjust diff for 360 switch over.
+    # Start by building a dict of coin_ids with an array of [image_id,seed_id,max_value,angle]
+
+    seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
+    coin_results = {}
+    bad_coin_ids = {}
+    bad_class_test_images_ids = []
+
+    for seed_image_id, images in seeds.iteritems():
+        for test_image_id, values in images.iteritems():
+            max_value, angle = values
+            coin_id = int(test_image_id / 100)
+            if coin_id not in coin_results.iterkeys():
+                coin_results[coin_id] = []
+            coin_results[coin_id].append([test_image_id, seed_image_id, max_value, angle])
+
+    for coin_id, values in coin_results.iteritems():
+        first_angle = values[0][3]
+        seed_image_id_counts = {}
+        for test_values in values:
+            seed_image_id = test_values[1]
+            if seed_image_id not in seed_image_id_counts.iterkeys():
+                seed_image_id_counts[seed_image_id] = 0
+            seed_image_id_counts[seed_image_id] += 1
+
+        major_seed_image_id = max(seed_image_id_counts.iteritems(), key=operator.itemgetter(1))[0]
+
+        for test_values in values:
+            test_image_id = test_values[0]
+            seed_image_id = test_values[1]
+            test_angle = test_values[3]
+            if seed_image_id != major_seed_image_id:
+                # if coin_id not in bad_coin_ids.iterkeys():
+                # bad_coin_ids[coin_id] = 1
+                # bad_coin_ids[coin_id] += 1
+                bad_class_test_images_ids.append(test_image_id)
+                continue
+            test_angle_difference = abs(first_angle - test_angle)
+            if test_angle_difference > 359:
+                test_angle_difference -= 360
+            if test_angle_difference > 10:
+                if coin_id not in bad_coin_ids.iterkeys():
+                    bad_coin_ids[coin_id] = 1
+                bad_coin_ids[coin_id] += 1
+    print bad_coin_ids
+    print bad_class_test_images_ids
+
+
 # *****************************************************************************
 # normal use:
 # build_init_rotational_networks()
@@ -531,7 +584,8 @@ seeds = [6100, 12600, 14300]
 #         create_test_script(seed_image_id, test_id, True)
 #         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
 # read_test(seeds, 5)
-read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+#read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
-# read_all_results(5, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+
+find_multi_point_errors()
 print 'Done in %s seconds' % (time.time() - start_time,)
