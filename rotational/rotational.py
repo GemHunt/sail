@@ -46,6 +46,8 @@ def create_seed_and_test_random(factor):
     # Only use 1/factor of the crop images
     # for example there are 10000 crops and a factor of 100
     #then only 100 of them would be the random seed and test images.
+    # A factor of 0 would be 100%
+    # This should be changed to percent!
     crops = []
     image_ids = []
     for filename in glob.iglob(crop_dir + '*.png'):
@@ -400,7 +402,7 @@ def save_graph():
 
 def read_all_results(cut_off=0, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
     image_set.read_results(cut_off, data_dir, seed_image_ids, seeds_share_test_images, remove_widened_seeds)
-    image_set.create_composite_images(crop_dir, html_dir, 140, 15, 10)
+    image_set.create_composite_images(crop_dir, html_dir, 140, 150, 10)
 
 
 def retrain_widened_seed(seed_image_id, cut_off):
@@ -483,6 +485,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
 
 
 #Multi-Point ************************************************************************************
+# Don't change this! This is a great example.
 start_time = time.time()
 # init_dir()
 # rename_multi_point_crops()
@@ -496,7 +499,7 @@ start_time = time.time()
 # seed_image_ids = range(12600, 12616)
 # image_id = 6100
 # seed_image_ids = range(6100, 6116)
-image_id = 14300
+# image_id = 14300
 # seed_image_ids = range(14300, 14317)
 # cutoff = 10
 # # create_single_lmdbs([image_id])
@@ -505,12 +508,29 @@ image_id = 14300
 #     filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
 # run_train_test(image_id, filedata, cutoff, 5, True)
 
-# Check out the results then widen the seed to include all crops for each coin:
-cutoff = 10
-filedata = get_single_lmdb_filedata(image_id, cutoff, add_multi_point_crops=True)
-run_train_test(image_id, filedata, cutoff, 5, True)
+# ********
+# Step 2:
+# Check out the results in the png
+# Note the cutoff
+# Then widen the seed to include all crops in all results for each seed:
+# cutoff = 10
+# filedata = get_single_lmdb_filedata(image_id, cutoff, add_multi_point_crops=True)
+# run_train_test(image_id, filedata, cutoff, 5, True)
+# read_test([6100, 12600, 14300], 5)
+# read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
-read_test([6100, 12600, 14300], 5)
+# ********
+# Step 3:
+# Check out all test images
+seeds = [6100, 12600, 14300]
+# create_seed_and_test_random(0)
+# create_all_test_lmdbs()
+# create_test_lmdbs(0)
+# for seed_image_id in seeds:
+#     for test_id in range(0, 6):
+#         create_test_script(seed_image_id, test_id, True)
+#         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
+# read_test(seeds, 5)
 read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
 # read_all_results(5, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
