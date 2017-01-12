@@ -63,6 +63,14 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         crop = cv2.imread(filename)
         if crop is None:
             continue
+        crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+
+        rows, cols = crop.shape
+
+        if not rows == cols == 448:
+            raise ValueError('This is hard coded to use 448x448 images')
+
+
 
         # images are 256 x 256, Center is 128,128, crop 56x56 from center:
         # crop = crop[100:156,100:156]
@@ -75,10 +83,10 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         crop = crop[144:304, 144:304]
 
         crop = cv2.resize(crop, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
-        crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+
 
         crops.append(crop)
-        mask = ci.get_circle_mask(crop_size)
+        # mask = ci.get_circle_mask(crop_size)
 
         phase = 'train'
         if create_val_set:

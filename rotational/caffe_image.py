@@ -14,6 +14,7 @@ def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size):
 
     rot_image = crop.copy()
     rot_image = rotate(rot_image, angle, center_x, center_y, before_rotate_size, before_rotate_size)
+    # This is hard coded for 28x28.
     rot_image = cv2.resize(rot_image, (41, 41), interpolation=cv2.INTER_AREA)
     rot_image = rot_image[6:34, 6:34]
 
