@@ -178,11 +178,9 @@ def create_train_script(lmdb_dir, weight_filename,multi_image_training):
     return shell_filename
 
 
-def get_single_lmdb_filedata(seed_id, max_value_cutoff, add_multi_point_crops=False):
+def get_single_lmdb_filedata(seed_id, max_value_cutoff):
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     filedata = []
-    expanded_filedata = []
-    coin_ids = []
     values = seeds[seed_id]
 
     # this is handy for large groups (heads,tails)
@@ -204,19 +202,36 @@ def get_single_lmdb_filedata(seed_id, max_value_cutoff, add_multi_point_crops=Fa
         if max_value > max_value_cutoff:
             filedata.append([image_id, crop_dir + str(image_id) + '.png', angle])
 
-    if add_multi_point_crops:
-        seed_image_ids = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-        for test_image_id, image_path, angle in filedata:
-            coin_id = int(test_image_id / 100)
-            if coin_id in coin_ids:
-                continue
-            coin_ids.append(coin_id)
-            for crop_id in seed_image_ids[coin_id]:
-                expanded_filedata.append(
-                    [coin_id * 100 + crop_id, crop_dir + str(coin_id * 100 + crop_id) + '.png', angle])
-        filedata = expanded_filedata
-
     return filedata
+
+
+def get_single_lmdb_multi_point_filedata(seed_id, max_value_cutoff, multi_point_error_test_image_ids):
+    # multi_point_error_test_image_ids really should be passed in per seed_id
+    seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
+    filedata = []
+    expanded_filedata = []
+    coin_ids = []
+    values = seeds[seed_id]
+
+    filedata.append([seed_id, crop_dir + str(seed_id) + '.png', 0])
+
+    for image_id, test_values in values.iteritems():
+        max_value, angle = test_values
+        if max_value > max_value_cutoff:
+            filedata.append([image_id, crop_dir + str(image_id) + '.png', angle])
+
+    multi_point_ids = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+    for test_image_id, image_path, angle in filedata:
+        coin_id = int(test_image_id / 100)
+        if coin_id in coin_ids:
+            continue
+        coin_ids.append(coin_id)
+        for crop_id in multi_point_ids[coin_id]:
+            test_image_id = coin_id * 100 + crop_id
+            if test_image_id not in multi_point_error_test_image_ids:
+                # the angles should not vary for the same coin id:
+                expanded_filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', angle])
+    return expanded_filedata
 
 
 # delete this function:
@@ -249,7 +264,7 @@ def create_single_lmdb(seed_image_id, filedata, test_id=0,multi_image_training =
     lmdb_dir = train_dir + str(seed_image_id) + '/'
 
     #create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(100 + (0.5 * test_id)), -1, True, False)
-    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(100 + (2 * test_id)), -1, True, False)
+    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, int(500 + (2 * test_id)), -1, True, False)
     copy_train_files(lmdb_dir, multi_image_training)
     # create_train_script(lmdb_dir, weight_filename_copy,multi_image_training)
     create_train_script(lmdb_dir, train_dir + weight_filename, multi_image_training)
@@ -622,36 +637,41 @@ def get_multi_point_error_test_image_ids():
 # Multi-Point with no Test IDs ************************************************************************************
 start_time = time.time()
 test_image_ids = []
+#seed_image_ids = [6100, 12600, 14300]
 seed_image_ids = [0, 100]
-init_dir()
-save_multi_point_ids()
-pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-for coin_id in range(0, 20):
-    for image_id in seed_image_data[coin_id]:
-        test_image_ids.append(coin_id * 100 + image_id)
-pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+# init_dir()
+# save_multi_point_ids()
+# pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+# seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+# for coin_id in range(0, 20):
+#     for image_id in seed_image_data[coin_id]:
+#         test_image_ids.append(coin_id * 100 + image_id)
+# pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+#
+# create_test_lmdbs(0)
+# cutoff = 10
+#
+# for seed_image_id in seed_image_ids:
+#     filedata = []
+#     seed_images = seed_image_data[int(seed_image_id / 100)]
+#     for image_id in seed_images:
+#         test_image_id = seed_image_id + image_id
+#         filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
+#     # the test_id = 5 just adds more data for now:
+#     create_single_lmdb(seed_image_id, filedata, 5, True)
+#     run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+#     create_test_script(seed_image_id, 0, True)
+#     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+# cut_off = 0
+# read_test(seed_image_ids, 360)
+multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+print 'The following test_image_ids where taking out of the image:'
+print multi_point_error_test_image_ids
+# image_set.read_results(0, data_dir, seeds_share_test_images=False)
+#image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
 
-create_test_lmdbs(0)
-cutoff = 10
-
-for seed_image_id in seed_image_ids:
-    filedata = []
-    seed_images = seed_image_data[int(seed_image_id / 100)]
-    for image_id in seed_images:
-        test_image_id = seed_image_id + image_id
-        filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
-    # the test_id = 5 just adds more data for now:
-    create_single_lmdb(seed_image_id, filedata, 5, True)
-    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    create_test_script(seed_image_id, 0, True)
-    run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-cut_off = 0
-read_test(seed_image_ids, 360)
-image_set.read_results(cut_off, data_dir, seed_image_ids, seeds_share_test_images=False, remove_widened_seeds=False)
-image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10)
-
-# 0,16.7
+# 0,all
+#100,17
 
 
 # ********
@@ -660,29 +680,33 @@ image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10)
 # Check out the results in the png
 # Note the cutoff
 # This should be changed to include the step 3 double check
-# cutoff = 10
-# filedata = get_single_lmdb_filedata(image_id, cutoff, add_multi_point_crops=True)
-# run_train_test(image_id, filedata, cutoff, 5, True)
-# read_test([6100, 12600, 14300], 5)
+
+for seed_image_id in seed_image_ids:
+    cutoff = 20
+    filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
+    create_single_lmdb(seed_image_id, filedata, 5, True)
+    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+read_test(seed_image_ids, 5)
 # read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
+
 
 # ********
 # Step 3:
 # Check out all test image results
-# seeds = [6100, 12600, 14300]
 # create_seed_and_test_random(0,14500)
 # create_all_test_lmdbs()
 # create_test_lmdbs(0)
-# for seed_image_id in seeds:
+# for seed_image_id in seed_image_ids:
 #     for test_id in range(0, 6):
 #         create_test_script(seed_image_id, test_id, True)
 #         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-# read_test(seeds, 5)
-#
-# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-# print 'The following test_image_ids where taking out of the image:'
-# print multi_point_error_test_image_ids
+# read_test(seed_image_ids, 5)
 
-# image_set.read_results(0, data_dir, seeds_share_test_images=False)
-#image_set.create_composite_images(crop_dir, html_dir, 140, 6, 6, None, multi_point_error_test_image_ids)
+multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+print 'The following test_image_ids where taking out of the image:'
+print multi_point_error_test_image_ids
+
+image_set.read_results(0, data_dir, seeds_share_test_images=False)
+image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
 print 'Done in %s seconds' % (time.time() - start_time,)
