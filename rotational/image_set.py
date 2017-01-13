@@ -303,7 +303,6 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
 
     for seed_image_id, seed_values in results.iteritems():
         images = []
-        crop_size = 160
         images.append(ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0))
 
         results = []
@@ -319,7 +318,8 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
             cv2.putText(crop, str(max_value)[0:5], (10, 20), font, .7, (0, 255, 0), 2)
             cv2.putText(crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
             images.append(crop)
-        composite_image = ci.get_composite_image(images, rows, cols)
+        calc_rows = int(len(images) / cols) + 1
+        composite_image = ci.get_composite_image(images, calc_rows, cols)
         cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
 
 

@@ -70,7 +70,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         rows, cols = gray.shape
         file_radius = 224
         if not rows == cols == file_radius * 2:
-            raise ValueError('This is hard coded to use 448x448 images')
+            print 'This is hard coded to use 448x448 images'
 
         sized_crops = []
         for radius in radii:
