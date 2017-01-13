@@ -21,6 +21,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     before_rotate_size = 56
     classes = 360
     mask = None
+    radii = [28, 42, 64, 96, 146, 224]
+
     if os.path.exists(lmdb_dir):
         shutil.rmtree(lmdb_dir)
 
@@ -60,32 +62,25 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
             break
 
         # crop = cv2.imread('/home/pkrush/copper/test.png')
-        crop = cv2.imread(filename)
-        if crop is None:
+        cap = cv2.imread(filename)
+        if cap is None:
             continue
-        crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(cap, cv2.COLOR_BGR2GRAY)
 
-        rows, cols = crop.shape
-
-        if not rows == cols == 448:
+        rows, cols = gray.shape
+        file_radius = 224
+        if not rows == cols == file_radius * 2:
             raise ValueError('This is hard coded to use 448x448 images')
 
+        sized_crops = []
+        for radius in radii:
+            # crop = gray[144:304, 144:304]
+            # graycopy = gray.copy()
+            crop = gray[file_radius - radius:file_radius + radius, file_radius - radius:file_radius + radius]
+            crop = cv2.resize(crop, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
+            sized_crops.append(crop)
+        crops.append(sized_crops)
 
-
-        # images are 256 x 256, Center is 128,128, crop 56x56 from center:
-        # crop = crop[100:156,100:156]
-
-        # images are 256 x 256, Center is 128,128, crop 160x160 from center:
-        # crop = crop[48:208, 48:208]
-
-
-        # images are 448 x 448, Center is 224,224  crop 160x160 from center:
-        crop = crop[144:304, 144:304]
-
-        crop = cv2.resize(crop, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
-
-
-        crops.append(crop)
         # mask = ci.get_circle_mask(crop_size)
 
         phase = 'train'
@@ -106,7 +101,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
 
     for random_float, angle, class_angle in angles:
         random_index = random.randint(0, len(crops) - 1)
-        crop = crops[random_index]
+        random_sized_crop_index = random.randint(0, len(radii) - 1)
+        crop = crops[random_index][random_sized_crop_index]
         image_id = filedata[random_index][0]
         angle_offset = filedata[random_index][2]
         angle_to_rotate = angle + angle_offset

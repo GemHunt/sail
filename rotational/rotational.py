@@ -663,16 +663,14 @@ seed_image_ids = [0, 100]
 #     create_test_script(seed_image_id, 0, True)
 #     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 # cut_off = 0
-# read_test(seed_image_ids, 360)
+read_test(seed_image_ids, 360)
+image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 print 'The following test_image_ids where taking out of the image:'
 print multi_point_error_test_image_ids
-# image_set.read_results(0, data_dir, seeds_share_test_images=False)
-#image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
+image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
 
-# 0,all
-#100,17
-
+# sys.exit("End")
 
 # ********
 # Step 2:
@@ -682,12 +680,12 @@ print multi_point_error_test_image_ids
 # This should be changed to include the step 3 double check
 
 for seed_image_id in seed_image_ids:
-    cutoff = 20
+    cutoff = 12
     filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
     create_single_lmdb(seed_image_id, filedata, 5, True)
     run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-read_test(seed_image_ids, 5)
+read_test(seed_image_ids, 360)
 # read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
 
 
@@ -701,7 +699,8 @@ read_test(seed_image_ids, 5)
 #     for test_id in range(0, 6):
 #         create_test_script(seed_image_id, test_id, True)
 #         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-# read_test(seed_image_ids, 5)
+# read_test(seed_image_ids, 360)
+
 
 multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 print 'The following test_image_ids where taking out of the image:'
