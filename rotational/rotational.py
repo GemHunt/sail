@@ -10,7 +10,6 @@ import os
 import random
 import shutil
 import subprocess
-import sys
 import time
 
 import create_lmdb_rotate_whole_image
@@ -576,75 +575,17 @@ def get_multi_point_error_test_image_ids():
 # Create test sets from the 500 lowest performers of each set.
 # create_new_indexes(30, 500)
 
-
-#Multi-Point ************************************************************************************
-# Don't change this! This is a great example.
+# Multi-Point Works awesome ************************************************************************************
 # start_time = time.time()
-# init_dir()
-# rename_multi_point_crops()
-#create_test_ids_from_multi_point()
-# #So there is 145 tests about 1/15 of the total.
-#
-# create_all_test_lmdbs()
-# create_test_lmdbs(0)
-# This needs to be changed to pick from what is available:
-# image_id = 12600
-# seed_image_ids = range(12600, 12616)
-# image_id = 6100
-# seed_image_ids = range(6100, 6116)
-# image_id = 14300
-# seed_image_ids = range(14300, 14317)
-# cutoff = 10
-# # create_single_lmdbs([image_id])
-# filedata = []
-# for seed_image_id in seed_image_ids:
-#     filedata.append([seed_image_id, crop_dir + str(seed_image_id) + '.png', 0])
-# run_train_test(image_id, filedata, cutoff, 5, True)
-
-# ********
-# Step 2:
-# Then widen the seed to include all crops in all results for each seed:
-# Check out the results in the png
-# Note the cutoff
-# This should be changed to include the step 3 double check
-# cutoff = 10
-# filedata = get_single_lmdb_filedata(image_id, cutoff, add_multi_point_crops=True)
-# run_train_test(image_id, filedata, cutoff, 5, True)
-# read_test([6100, 12600, 14300], 5)
-# read_all_results(0, seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
-
-# ********
-# Step 3:
-# Check out all test image results
-# seeds = [6100, 12600, 14300]
-# create_seed_and_test_random(0,14500)
-# create_all_test_lmdbs()
-# create_test_lmdbs(0)
-# for seed_image_id in seeds:
-#     for test_id in range(0, 6):
-#         create_test_script(seed_image_id, test_id, True)
-#         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-# read_test(seeds, 5)
-#
-# image_set.read_results(0, data_dir, seeds_share_test_images=False)
-# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-# print 'The following test_image_ids where taking out of the image:'
-# print multi_point_error_test_image_ids
-# image_set.create_composite_images(crop_dir, html_dir, 140, 150, 10, None, multi_point_error_test_image_ids)
-# print 'Done in %s seconds' % (time.time() - start_time,)
-
-
-# Multi-Point with no Test IDs ************************************************************************************
-start_time = time.time()
-test_image_ids = []
+# test_image_ids = []
 #seed_image_ids = [6100, 12600, 14300]
-seed_image_ids = [0, 100, 23700, 15700, 29300, 19500, 22000, 18200, 22800, 20400, 24800, 22400, 22300, 23500, 25100,
-                  22600, 20700, 15800, 18800, 26200, 20000, 20800, 18700, 21600, 16300, 14300]
+# seed_image_ids = [0, 100, 23700, 15700, 29300, 19500, 22000, 18200, 22800, 20400, 24800, 22400, 22300, 23500, 25100,
+#                   22600, 20700, 15800, 18800, 26200, 20000, 20800, 18700, 21600, 16300, 14300]
 #seed_image_ids = [16300,23700]
 
-init_dir()
+# init_dir()
 # save_multi_point_ids()
-pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+# pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 # seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
 # for coin_id in range(0,305 ):
 #     for image_id in seed_image_data[coin_id]:
@@ -666,16 +607,16 @@ pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 #     create_test_script(seed_image_id, 0, True)
 #     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 # cut_off = 0
-read_test(seed_image_ids, 360)
-image_set.read_results(0, data_dir, seeds_share_test_images=False)
-multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-print 'The following test_image_ids where taking out of the image:'
-print multi_point_error_test_image_ids
-print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
-image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
-image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
-print 'Done in %s seconds' % (time.time() - start_time,)
-sys.exit("End")
+# read_test(seed_image_ids, 360)
+# image_set.read_results(0, data_dir, seeds_share_test_images=False)
+# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+# print 'The following test_image_ids where taking out of the image:'
+# print multi_point_error_test_image_ids
+# print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
+# image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
+# image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
+# print 'Done in %s seconds' % (time.time() - start_time,)
+# sys.exit("End")
 
 # ********
 # Step 2:
@@ -684,13 +625,13 @@ sys.exit("End")
 # Note the cutoff
 # This should be changed to include the step 3 double check
 
-for seed_image_id in seed_image_ids:
-    cutoff = 10
-    filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
-    create_single_lmdb(seed_image_id, filedata, 0, True, 2800, retraining=True)
-    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-read_test(seed_image_ids, 360)
+# for seed_image_id in seed_image_ids:
+#     cutoff = 10
+#     filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
+#     create_single_lmdb(seed_image_id, filedata, 0, True, 2800, retraining=True)
+#     run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+#     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+# read_test(seed_image_ids, 360)
 
 # ********
 # Step 3:
@@ -704,12 +645,18 @@ read_test(seed_image_ids, 360)
 #         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
 # read_test(seed_image_ids, 360)
 
-image_set.read_results(0, data_dir, seeds_share_test_images=False)
-multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-print 'The following test_image_ids where taking out of the image:'
-print multi_point_error_test_image_ids
-print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
+# image_set.read_results(0, data_dir, seeds_share_test_images=False)
+# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+# print 'The following test_image_ids where taking out of the image:'
+# print multi_point_error_test_image_ids
+# print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
+#
+# image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
+# image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
+# print 'Done in %s seconds' % (time.time() - start_time,)
 
-image_set.create_composite_images(crop_dir, html_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
-image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
-print 'Done in %s seconds' % (time.time() - start_time,)
+
+#Dates  ************************************************************************************
+image_set.read_results(0, data_dir, seeds_share_test_images=False)
+# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+image_set.create_date_composite_image(crop_dir, html_dir, 100, 300, [])
