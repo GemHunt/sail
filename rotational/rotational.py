@@ -658,5 +658,6 @@ def get_multi_point_error_test_image_ids():
 
 #Dates  ************************************************************************************
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
-# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-image_set.create_date_composite_image(crop_dir, html_dir, 100, 300, [])
+multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+# Create a composite image for dates:
+image_set.create_date_composite_image(crop_dir, html_dir, 100, 300, multi_point_error_test_image_ids)
