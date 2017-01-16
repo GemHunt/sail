@@ -44,7 +44,8 @@ def rotate(img, angle, center_x, center_y, rows, cols):
 def get_rotated_crop(crop_dir, crop_id, crop_size, angle):
     crop = cv2.imread(crop_dir + str(crop_id) + '.png')
     if crop == None:
-        pass
+        print crop_id, 'None'
+        return None
 
     crop = cv2.resize(crop, (crop_size, crop_size), interpolation=cv2.INTER_AREA)
     m = cv2.getRotationMatrix2D((crop_size / 2, crop_size / 2), angle, 1)

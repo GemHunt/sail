@@ -20,6 +20,7 @@ seed_groups = []
 widened_seeds = []
 remove_results_of_these_seeds = []
 
+
 def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
     all_results = pickle.load(open(data_dir + 'all_results.pickle', "rb"))
     # columns = ['seed_image_id', 'image_id', 'angle', 'max_value']
@@ -327,6 +328,18 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
 def create_date_composite_image(crop_dir, html_dir, seed_image_id, max_images, remove_image_ids):
     image_size = 448
     crop_radius = 56
+    heads_date_angle = 158
+    date_center_offset = 166
+    # This is the angle seed 100 was imaged at:
+    seed_id_100_angle = 148
+
+    # closer up for translation:
+    # crop_radius = 28
+    # heads_date_angle = 158
+    # date_center_offset = 166
+    # This is the angle seed 100 was imaged at:
+    # seed_id_100_angle = 148
+
     seed_values = results_dict[seed_image_id]
 
     images = []
@@ -346,10 +359,6 @@ def create_date_composite_image(crop_dir, html_dir, seed_image_id, max_images, r
         if crop == None:
             pass
 
-        heads_date_angle = 158
-        date_center_offset = 166
-        # This is the angle seed 100 was imaged at:
-        seed_id_100_angle = 148
         center_x = image_size / 2 + math.cos(math.radians(heads_date_angle + angle)) * date_center_offset
         center_y = image_size / 2 - math.sin(math.radians(heads_date_angle + angle)) * date_center_offset
         print image_id, max_value, angle, center_x, center_y
@@ -358,18 +367,21 @@ def create_date_composite_image(crop_dir, html_dir, seed_image_id, max_images, r
                                       crop_radius * 2)
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(rotated_date_crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
+        cv2.circle(rotated_date_crop, (crop_radius, crop_radius), 2, (0, 0, 255), 1)
         crop_rows, crop_cols, channels = rotated_date_crop.shape
         if crop_rows != crop_cols:
             print image_id, crop_rows, crop_cols
             rotated_date_crop = cv2.resize(rotated_date_crop, (crop_radius * 2, crop_radius * 2),
                                            interpolation=cv2.INTER_AREA)
+
+        #cv2.imwrite('/home/pkrush/cent-dates/' + str(image_id) + '.png',rotated_date_crop)
         images.append(rotated_date_crop)
         count += 1
 
     calc_rows = int(len(images) / 10) + 1
     composite_image = ci.get_composite_image(images, calc_rows, 10)
     cv2.imwrite(html_dir + 'dates.png', composite_image)
-
+    print count, 'Date images written'
 
 def create_composite_image(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids):
     images = []

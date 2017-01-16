@@ -21,7 +21,10 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     before_rotate_size = 56
     classes = 360
     mask = None
-    radii = [28, 42, 64, 96, 146, 224]
+    # radii = [28, 42, 64, 96, 146, 224]
+    # file_radius = 224
+    radii = [28, 42, 56]
+    file_radius = 56
 
     if os.path.exists(lmdb_dir):
         shutil.rmtree(lmdb_dir)
@@ -68,7 +71,6 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         gray = cv2.cvtColor(cap, cv2.COLOR_BGR2GRAY)
 
         rows, cols = gray.shape
-        file_radius = 224
         if not rows == cols == file_radius * 2:
             print 'This is hard coded to use 448x448 images'
 
