@@ -303,6 +303,9 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
     else:
         results = {seed_image_id: results_dict[seed_image_id] for seed_image_id in seed_image_ids}
 
+    if remove_image_ids is None:
+        remove_image_ids = []
+
     for seed_image_id, seed_values in results.iteritems():
         images = []
         images.append(ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0))
@@ -389,6 +392,7 @@ def create_composite_image(crop_dir, html_dir, crop_size, rows, cols, seed_image
         crop = ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0)
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(crop, str(seed_image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
+        cv2.circle(crop, (crop_size / 2, crop_size / 2), 2, (0, 0, 255), 1)
         images.append(crop)
     composite_image = ci.get_composite_image(images, rows, cols)
     cv2.imwrite(html_dir + 'composite_image.png', composite_image)

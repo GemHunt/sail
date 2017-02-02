@@ -10,7 +10,6 @@ import os
 import random
 import shutil
 import subprocess
-import sys
 import time
 
 import create_lmdb_rotate_whole_image
@@ -352,6 +351,8 @@ def read_test(image_ids, max_test_id):
     else:
         low_angle, high_angle = test_angles[max_test_id]
 
+    low_angle = 10
+    high_angle = 350
 
     for test_id in range(0, max_test_id + 1):
         for image_id in image_ids:
@@ -551,7 +552,8 @@ def get_multi_point_error_test_image_ids():
                     bad_coin_ids[coin_id] = 0
                 bad_coin_ids[coin_id] += 1
                 multi_point_error_test_image_ids.append(test_image_id)
-    return multi_point_error_test_image_ids
+
+    return sorted(list(set(multi_point_error_test_image_ids)))
 
 
 # *****************************************************************************
@@ -588,14 +590,11 @@ test_image_ids = []
 # seed_image_ids = [0, 100, 23700, 15700, 29300, 19500, 22000, 18200, 22800, 20400, 24800, 22400, 22300, 23500, 25100,
 #                   22600, 20700, 15800, 18800, 26200, 20000, 20800, 18700, 21600, 16300, 14300]
 #seed_image_ids = [16300,23700]
-seed_image_ids = [1965, 1980, 1973, 'euro', 1999, 1940, 1979, 1977, 1961, 1967, 1982, 1972]
-seed_image_ids = [4300, 20500, 10204, 26800, 9600, 1400, 5300, 6400, 6800, 8001]
-seed_image_ids = [3600, 4800, 302, 402, 500, 600, 908, 2300, 3510, 4010, 4807]
+seed_image_ids = [4300, 20500, 10204, 26800, 9600, 1400, 5300, 6400, 6800, 8001, 3600, 4800, 302, 402, 500, 600, 908,
+                  2300, 3510, 4010, 4807]
 
-# seed_image_ids = [4300,20500,10200,26800,9600,1400,5300,6400,6800]
 widen_seed_image_ids = [4800, 3600]
 
-#
 # init_dir()
 # save_multi_point_ids()
 pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
@@ -608,31 +607,30 @@ seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
 #
 # #create_test_lmdbs(0)
 #
-for seed_image_id in seed_image_ids:
-    filedata = []
-    seed_images = seed_image_data[int(seed_image_id / 100)]
-    for image_id in seed_images:
-        test_image_id = seed_image_id + image_id
-        filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
-    # the test_id = 5 just adds more data for now:
-    create_single_lmdb(seed_image_id, filedata, 0, True, 700)
-    run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    create_test_script(seed_image_id, 0, True)
-    run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+# for seed_image_id in seed_image_ids:
+# filedata = []
+# seed_images = seed_image_data[int(seed_image_id / 100)]
+# for image_id in seed_images:
+#     test_image_id = seed_image_id + image_id
+#     filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
+# # the test_id = 5 just adds more data for now:
+# create_single_lmdb(seed_image_id, filedata, 0, True, 700)
+# run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+# create_test_script(seed_image_id, 0, True)
+# run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 
-seed_image_ids = [4300, 20500, 10204, 26800, 9600, 1400, 5300, 6400, 6800, 8001, 3600, 4800, 302, 402, 500, 600, 908,
-                  2300, 3510, 4010, 4807]
-pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-read_test(seed_image_ids, 360)
+# read_test(seed_image_ids, 360)
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 print 'The following test_image_ids where taking out of the image:'
 print multi_point_error_test_image_ids
 print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
 image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
-image_set.create_composite_image(crop_dir, html_dir, 140, 40, 10, multi_point_error_test_image_ids)
+
+# image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
+image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
 print 'Done in %s seconds' % (time.time() - start_time,)
-sys.exit("End")
+# sys.exit("End")
 
 # ********
 # Step 2:
