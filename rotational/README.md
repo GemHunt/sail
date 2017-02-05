@@ -11,17 +11,27 @@ A fast tool to group coin designs and determine orientation angles with no manua
 
 **Usage:**
 * Execution starts in rotational.py
-* Download and un-tar sample images(13927 cent coin images, 180MB total):
+* Download and untar sample images(13927 cent coin images, 180MB total):
 * http://www.gemhunt.com/cents.tar.gz
 * Run build_init_rotational_networks() in rotational.py
 * (for now) Pick the best model from cent-models/metadata/html
 
 **Tasks:**
-* Start over and go for heads & tails again
 * Document how this is done
+* Start over and go for heads & tails again
 * Fix: something in widen_model deleted all metadata?
+* Huge: Generically add X translations,Y translations, and off center options to the pipeline. Store the offsets by using the image_id so the translations to be recursively applied. Generically define the range of the translation, as in what is this training and testing?
+* What happens when the rotation network is tested at courser angles? Say 10 degrees instead of 1 degree?
+* Off Center Secondary Networks (Dates): (In a quick & dirty test I did, this works great!) Once a network is built for a design and the angle is known the same processes can be repleted for any image crop off center. At first this is for grouping dates, but it can be used for anything. This is a double check to coin designs.
+* Add results options:
+* ---Show only one image per coin using the average correct results for all the same coin images.
+* ---View least correlated coins in all test results.
+* ---View least correlated images in all test results.
+* Fix or acknowledge???: The current error checking(multi_point_error_test_image_ids) fails when seeds are too closely correlated.
+
 
 **Later Tasks:**
+* Does rotational lighting augmentation really work that great? Try captures with a cheap USB microscope using just the stock top lighting.
 * Only resize once.
 * Use crop_size again.
 * Remove 'pkrush' from the repo
@@ -48,6 +58,7 @@ A fast tool to group coin designs and determine orientation angles with no manua
 **Latter Improvements:**
 * Speed: Different GPUs, multi threading, move more to C++
 * Reduce work: For example about using 5 degree steps instead of 1?
+* Better ensembling! These correlations are not summed very well at all. I need to be able to add the predictions better.
 * Ensemble multiple models at different cropping(and remapped ring-crop) resolutions
 * Ensemble in 2nd level models from off center cropping such as dates
 * Getting dates might help the first level models. If this off center tool scores low the 1st model results might be in question.
@@ -76,8 +87,8 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * This is a big one as it can build a full class from a single scan. Light every frame with a different LED from a different angle as the part is moving under the camera. Use WS2812 LED Strips to get 8-30 different shadows. Use the 3 color channels in the LED to scan 3 angles at once! Also I could take all lights on pictures, and pictures with lights different heights. Not fancy, just 3 light strips loops. One loop horizontal, one vertical, and one under for separate backlighting shots. They don’t have to be mounted perfectly. The LEDs can switch every frame. You check the every n frames to see if the times is correct. The belt would always be moving. So both the camera and the lighting would be different models. I could make the models every image for itself then I could ensemble them. This is cool because it will show when the models are bad. The reason for this is also because this setup is going to work not just for coins, but other part types as well with no changes.
 
 **Back lighting**:
-* Scan screws without an image at all:1 bit backlighting from 8 different angles would the same as 256 gray but really it should be blob input instead of an image. 
-* You could have 25 different backlighting channels with cameras on top and bottom with the frosted belt. This is sloppy 3d scanning without doing the math. 
+* Scan screws without an image at all:1 bit backlighting from 8 different angles would the same as 256 gray but really it should be blob input instead of an image.
+* You could have 25 different backlighting channels with cameras on top and bottom with the frosted belt. This is sloppy 3d scanning without doing the math.
 * This will work for sure with the screws not touching, but can be it work with the screws touching?
 * An old flat panel display can be both the backlight and it can light up around the issue screws.
 
@@ -97,12 +108,3 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * Try rewriting lmdbs, while removing image_ids.
 * Try adding and subtracting images from lmdbs.
 * C++ GPU driven rotate tool for LMDBs? I bet this could be 100 times on the GPU & C++ and not that hard to do.
-
-**Use S.A.I.L.(Semi Automated Image Labeling):**
-* Bootstrapping with limited manual training
-* Use Flask to serve the image results.
-* Server process that can do the whole cycle by itself
-* It chooses what would the most helpful to work on next.
-* It also chooses where to ask a human for help. So a human can intermittently help out.
-* This is better than pure process with no human help because it can work with or without a human.
-

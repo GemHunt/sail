@@ -25,4 +25,3 @@ https://github.com/GemHunt/caffe/tree/master/examples/cpp_classification
 * Put in a bootstrapping web app with limited manual training
 * Use Flask to serve the image results
 * Add a server process that can do the whole cycle by itself. It chooses what would the most helpful to work on next. It also chooses where to ask a human for help. So a human can intermittently help out. This is better than pure process with no human help because it can work with or without a human.
-
