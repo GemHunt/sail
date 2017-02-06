@@ -1,25 +1,14 @@
 # rotational
-Self-Supervised Rotational Clustering Networks
+Self-Supervised Correlational Clustering Networks
+Feature detection & localization. Anomaly detection.
+(I don’t know what to call it! I keep changing the name. Regardless, it works great!)
 
 A fast tool to group coin designs and determine orientation angles with no manual labeling
 
-**Installation:**
-* Nvidia DIGITS needs to be installed on ubuntu 14.04 and tested. See:
-* https://github.com/GemHunt/CoinSorter/blob/master/scripts/AWSCaffeDigetsBuild.md
-* If you're using bash (on a Mac or GNU/Linux distro), add this line to your ~/.bashrc file: 
-    export PYTHONPATH=~/caffe/python:$PYTHONPATH
-
-**Usage:**
-* Execution starts in rotational.py
-* Download and untar sample images(13927 cent coin images, 180MB total):
-* http://www.gemhunt.com/cents.tar.gz
-* Run build_init_rotational_networks() in rotational.py
-* (for now) Pick the best model from cent-models/metadata/html
-
 **Tasks:**
 * Document how this is done
-* Start over and go for heads & tails again
-* Fix: something in widen_model deleted all metadata?
+* Add in a train_id or something to manage test runs
+* Move hard coded vars to config file and manage with a train_id
 * Huge: Generically add X translations,Y translations, and off center options to the pipeline. Store the offsets by using the image_id so the translations to be recursively applied. Generically define the range of the translation, as in what is this training and testing?
 * What happens when the rotation network is tested at courser angles? Say 10 degrees instead of 1 degree?
 * Off Center Secondary Networks (Dates): (In a quick & dirty test I did, this works great!) Once a network is built for a design and the angle is known the same processes can be repleted for any image crop off center. At first this is for grouping dates, but it can be used for anything. This is a double check to coin designs.
@@ -28,11 +17,18 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * ---View least correlated coins in all test results.
 * ---View least correlated images in all test results.
 * Fix or acknowledge???: The current error checking(multi_point_error_test_image_ids) fails when seeds are too closely correlated.
-
+* Change how Get_multi_point_error_test_image_ids works:
+* ---this might be a weak spot. Maybe scale needs to be broken out to separate similar networks
+* ---There should be a per seed output of class and angle.
+* ---Average the angle because all the angle should be the same
+* ---Take all for a seed if more than 50% are errors.
+* ---This is important because these 1-4 groups of coins that get really need to be part of the next seed
+* Make a sample composite image of what is going to the lmdb file, or write/find a lmdb viewer) It’s easy to lose debugging time due to bad lmdb creation.
 
 **Later Tasks:**
+* Go beyond a fixed learning rate during training. Dropping the base_lr at the end of training would help.
+* Create_single_lmdb needs to guess the amount of training data better. Up to 2800 samples is silly at times. Maybe this needs determine the epic count as well.
 * Does rotational lighting augmentation really work that great? Try captures with a cheap USB microscope using just the stock top lighting.
-* Only resize once.
 * Use crop_size again.
 * Remove 'pkrush' from the repo
 * does remove_widened_seeds need to be an option?
@@ -83,15 +79,6 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * Research: Talk with others about what works best
 * Hardware Reject/Online Training: In practice I could reject and rescan parts that don’t have a class.
 
-**Circular Lighting:**
-* This is a big one as it can build a full class from a single scan. Light every frame with a different LED from a different angle as the part is moving under the camera. Use WS2812 LED Strips to get 8-30 different shadows. Use the 3 color channels in the LED to scan 3 angles at once! Also I could take all lights on pictures, and pictures with lights different heights. Not fancy, just 3 light strips loops. One loop horizontal, one vertical, and one under for separate backlighting shots. They don’t have to be mounted perfectly. The LEDs can switch every frame. You check the every n frames to see if the times is correct. The belt would always be moving. So both the camera and the lighting would be different models. I could make the models every image for itself then I could ensemble them. This is cool because it will show when the models are bad. The reason for this is also because this setup is going to work not just for coins, but other part types as well with no changes.
-
-**Back lighting**:
-* Scan screws without an image at all:1 bit backlighting from 8 different angles would the same as 256 gray but really it should be blob input instead of an image.
-* You could have 25 different backlighting channels with cameras on top and bottom with the frosted belt. This is sloppy 3d scanning without doing the math.
-* This will work for sure with the screws not touching, but can be it work with the screws touching?
-* An old flat panel display can be both the backlight and it can light up around the issue screws.
-
 **Angle error reduction with short path graphs:**
 * Start with a tiny network:
 * Pick 2 points at random
@@ -104,7 +91,5 @@ A fast tool to group coin designs and determine orientation angles with no manua
 * Does the total error start dropping?
 
 **LMDB Improvements:**
-* Try adding images
-* Try rewriting lmdbs, while removing image_ids.
-* Try adding and subtracting images from lmdbs.
-* C++ GPU driven rotate tool for LMDBs? I bet this could be 100 times on the GPU & C++ and not that hard to do.
+* Try editing pre existing lmdbs: as adding and subtracting images.
+* create images using C++ GPU instead of python. 100x speed up.
