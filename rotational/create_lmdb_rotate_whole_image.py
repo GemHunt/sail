@@ -21,10 +21,12 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     before_rotate_size = 56
     classes = 360
     mask = None
-    # radii = [28, 42, 64, 96, 146, 224]
-    # file_radius = 224
-    radii = [28, 42, 56]
-    file_radius = 56
+    radii = [28, 42, 64, 96, 146, 224]
+    file_radius = 224
+
+    # For Dates:
+    # radii = [28, 42, 56]
+    # file_radius = 56
 
     if os.path.exists(lmdb_dir):
         shutil.rmtree(lmdb_dir)

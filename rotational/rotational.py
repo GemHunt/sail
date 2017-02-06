@@ -16,11 +16,12 @@ import create_lmdb_rotate_whole_image
 import image_set
 import summarize_rotated_crops
 
-# home_dir = '/home/pkrush/cent-models/'
-# crop_dir = '/home/pkrush/cents/'
+home_dir = '/home/pkrush/cent-models/'
+crop_dir = '/home/pkrush/cents/'
 
-home_dir = '/home/pkrush/cent-date-models/'
-crop_dir = '/home/pkrush/cent-dates/'
+# For Dates:
+# home_dir = '/home/pkrush/cent-date-models/'
+# crop_dir = '/home/pkrush/cent-dates/'
 
 data_dir = home_dir + 'metadata/'
 html_dir = home_dir + 'metadata/html/'
@@ -351,8 +352,9 @@ def read_test(image_ids, max_test_id):
     else:
         low_angle, high_angle = test_angles[max_test_id]
 
-    low_angle = 10
-    high_angle = 350
+    # For Dates
+    # low_angle = 10
+    #high_angle = 350
 
     for test_id in range(0, max_test_id + 1):
         for image_id in image_ids:
