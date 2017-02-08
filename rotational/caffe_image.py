@@ -174,10 +174,11 @@ def get_composite_image(images, rows,cols):
     key = 0
     for x in range(0, rows):
         for y in range(0, cols):
+            key += 1
             if len(images) <= key:
                 break
-            composite_image[x * crop_rows:((x + 1) * crop_rows), y * crop_cols:((y + 1) * crop_cols)] = images[key]
-            key += 1
+            if images[key] is not None:
+                composite_image[x * crop_rows:((x + 1) * crop_rows), y * crop_cols:((y + 1) * crop_cols)] = images[key]
     return composite_image
 
 

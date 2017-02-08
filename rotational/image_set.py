@@ -1,4 +1,5 @@
 import cPickle as pickle
+import glob
 import math
 import os
 import shutil
@@ -36,6 +37,12 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
     # This fills image_ids_with_highest_max_value:
     for results in all_results:
         for seed_image_id, image_id, angle, max_value in results:
+            if seed_image_id in (14300, 23500, 22000, 15800, 23700):
+                max_value = max_value * .6
+
+            if seed_image_id in (23700, 18200, 16300):
+                max_value = max_value * 1.3
+
             # Well, we know this was a match already:
             if seed_image_id == image_id:
                 continue
@@ -308,7 +315,10 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
 
     for seed_image_id, seed_values in results.iteritems():
         images = []
-        images.append(ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0))
+        rotated_crop = ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0)
+        if rotated_crop is None:
+            continue
+        images.append(rotated_crop)
 
         results = []
         for image_id, values in seed_values.iteritems():
@@ -405,6 +415,15 @@ def create_composite_image_from_filedata(crop_dir, html_dir, crop_size, rows, co
         images.append(crop)
     composite_image = ci.get_composite_image(images, rows, cols)
     cv2.imwrite(html_dir + 'composite_image.png', composite_image)
+
+
+def save_gray(src_dir, dst_dir, size):
+    for full_filename in glob.iglob(src_dir + '*.png'):
+        image = cv2.imread(full_filename)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        small = cv2.resize(gray, (size, size), interpolation=cv2.INTER_AREA)
+        new_filename = full_filename.replace(src_dir, dst_dir)
+        cv2.imwrite(new_filename, small)
 
 def save_widened_seeds(data_dir, seed_image_id,cut_off):
     widened_seeds = []
