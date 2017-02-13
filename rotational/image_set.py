@@ -22,12 +22,14 @@ widened_seeds = []
 remove_results_of_these_seeds = []
 
 
-def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False):
+def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False,
+                 bad_coin_ids=None, ground_truth=None):
     all_results = pickle.load(open(data_dir + 'all_results.pickle', "rb"))
     # columns = ['seed_image_id', 'image_id', 'angle', 'max_value']
     image_ids_with_highest_max_value = {}
     results_dict.clear()
     seeds_to_remove = []
+
 
     if remove_widened_seeds:
         seeds_to_remove = widened_seeds
@@ -54,16 +56,32 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
 
     for results in all_results:
         for seed_image_id, image_id, angle, max_value in results:
+            seed_coin_id = seed_image_id / 100
+            image_coin_id = image_id / 100
+            if ground_truth is not None:
+                if image_coin_id in ground_truth.iterkeys():
+                    if ground_truth[image_coin_id] != seed_coin_id:
+                        continue
+            if bad_coin_ids is not None:
+                if [seed_coin_id, image_coin_id] in bad_coin_ids:
+                    continue
+
             # This is cheating. Some models are more confident than others and they score better if they are balanced.
             if seed_image_id not in (0, 100):
                 adjustment = overall_average_max_value / average_max_values[seed_image_id]
                 max_value = max_value * adjustment * .7
 
-            # if seed_image_id in (14300, 23500, 22000, 15800, 23700):
-            #     max_value = max_value * .6
-            #
-            if seed_image_id in (18200, 16300, 26300, 19300, 14300):
+            if seed_image_id in (100, 999):
+                max_value = max_value * .6
+
+            if seed_image_id in (0, 999,):
+                max_value = max_value * 1.2
+
+            if seed_image_id in (18200, 16300, 26300, 19300):
                 max_value = max_value * 1.4
+
+            if seed_image_id in (14300, 999):
+                max_value = max_value * 2
 
 
             # Well, we know this was a match already:
@@ -327,7 +345,8 @@ def clean_dir(dir):
         os.makedirs(dir)
 
 
-def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None):
+def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None,
+                            use_top_coin_image=False):
     clean_dir(html_dir)
     if seed_image_ids is None:
         results = results_dict
@@ -345,10 +364,24 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
         images.append(rotated_crop)
 
         results = []
-        for image_id, values in seed_values.iteritems():
-            max_value, angle = values
-            if image_id not in remove_image_ids:
+        coin_results = {}
+
+        if use_top_coin_image:
+            for image_id, values in seed_values.iteritems():
+                max_value, angle = values
+                if image_id not in remove_image_ids:
+                    coin_id = image_id / 100
+                    if coin_id not in coin_results.iterkeys():
+                        coin_results[coin_id] = []
+                    coin_results[coin_id].append([image_id, max_value, angle])
+            for coin_id, values in coin_results.iteritems():
+                image_id, max_value, angle = max(values, key=lambda item: item[1])
                 results.append([image_id, max_value, angle])
+        else:
+            for image_id, values in seed_values.iteritems():
+                max_value, angle = values
+                if image_id not in remove_image_ids:
+                    results.append([image_id, max_value, angle])
 
         sorted_results = sorted(results, key=lambda result: result[1], reverse=True)
         for image_id, max_value, angle in sorted_results:

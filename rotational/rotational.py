@@ -643,6 +643,79 @@ pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 
 widen_seed_image_ids = [4800, 3600]
 
+bad_coin_ids = []
+bad_coin_ids.append([0, 165])
+bad_coin_ids.append([0, 128])
+bad_coin_ids.append([0, 189])
+bad_coin_ids.append([0, 197])
+bad_coin_ids.append([0, 145])
+bad_coin_ids.append([0, 244])
+bad_coin_ids.append([0, 162])
+bad_coin_ids.append([0, 221])
+bad_coin_ids.append([0, 154])
+bad_coin_ids.append([0, 181])
+bad_coin_ids.append([100, 192])
+bad_coin_ids.append([100, 239])
+bad_coin_ids.append([143, 269])
+bad_coin_ids.append([143, 284])
+bad_coin_ids.append([143, 229])
+bad_coin_ids.append([143, 247])
+bad_coin_ids.append([143, 219])
+bad_coin_ids.append([143, 164])
+bad_coin_ids.append([143, 290])
+bad_coin_ids.append([143, 217])
+bad_coin_ids.append([157, 274])
+bad_coin_ids.append([157, 246])
+bad_coin_ids.append([163, 153])
+bad_coin_ids.append([163, 155])
+bad_coin_ids.append([163, 242])
+bad_coin_ids.append([163, 249])
+bad_coin_ids.append([207, 83])
+bad_coin_ids.append([207, 214])
+bad_coin_ids.append([216, 169])
+bad_coin_ids.append([216, 148])
+bad_coin_ids.append([226, 191])
+bad_coin_ids.append([226, 175])
+bad_coin_ids.append([226, 236])
+bad_coin_ids.append([228, 238])
+bad_coin_ids.append([228, 225])
+bad_coin_ids.append([248, 193])
+bad_coin_ids.append([248, 260])
+bad_coin_ids.append([248, 250])
+
+ground_truth = {}
+ground_truth[164] = 157
+ground_truth[192] = 163
+ground_truth[237] = 163
+ground_truth[175] = 163
+ground_truth[162] = 163
+ground_truth[214] = 163
+ground_truth[246] = 163
+ground_truth[260] = 204
+ground_truth[169] = 204
+ground_truth[236] = 204
+ground_truth[250] = 204
+ground_truth[225] = 204
+ground_truth[242] = 216
+ground_truth[165] = 220
+ground_truth[148] = 200
+ground_truth[269] = 293
+ground_truth[274] = 293
+ground_truth[219] = 251
+ground_truth[249] = 224
+ground_truth[217] = 224
+ground_truth[239] = 163
+ground_truth[193] = 223
+ground_truth[83] = 204
+ground_truth[102] = 204
+ground_truth[150] = 200
+ground_truth[155] = 224
+ground_truth[176] = 223
+ground_truth[227] = 158
+ground_truth[229] = 235
+
+
+
 # init_dir()
 # save_multi_point_ids()
 #seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
@@ -664,12 +737,12 @@ widen_seed_image_ids = [4800, 3600]
 #
 #
 #read_test(seed_image_ids, 360)
-image_set.read_results(0, data_dir, seeds_share_test_images=False)
+image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
 multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 print 'The following test_image_ids where taking out of the image:'
 print multi_point_error_test_image_ids
 print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
-image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
+image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
 print 'Done in %s seconds' % (time.time() - start_time,)
 sys.exit("End")
