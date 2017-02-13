@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import sys
 import time
+from itertools import islice
+from subprocess import Popen
 
 import create_lmdb_rotate_whole_image
 import image_set
@@ -83,9 +85,11 @@ def create_test_ids_from_multi_point(size_limit=-1):
     for coin_id, image_ids in seed_image_ids.iteritems():
         if size_limit > 0 and size_limit <= coin_id:
             continue
-        test_image_id = image_ids[random.randint(0, len(image_ids) - 1)]
-        test_image_ids.append(coin_id * 100 + test_image_id)
-
+        # for only one random test image:
+        # test_image_id = image_ids[random.randint(0, len(image_ids) - 1)]
+        # test_image_ids.append(coin_id * 100 + test_image_id)
+        for image_id in image_ids:
+            test_image_ids.append(coin_id * 100 + image_id)
     pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
 
@@ -148,6 +152,21 @@ def rename_multi_point_crops():
         image_id = int(renamed.replace('.png', '').replace(crop_dir, ''))
         renamed = crop_dir + str(image_id) + '.png'
         os.rename(filename,renamed)
+        test_image_ids.append(image_id)
+    pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+
+
+def save_multi_point_crops():
+    crops = []
+    test_image_ids = []
+    for filename in glob.iglob(crop_dir + '*.png'):
+        crops.append(filename)
+    crops.sort()
+    for filename in crops:
+        renamed = filename.replace("_", "")
+        image_id = int(renamed.replace('.png', '').replace(crop_dir, ''))
+        renamed = crop_dir + str(image_id) + '.png'
+        os.rename(filename, renamed)
         test_image_ids.append(image_id)
     pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
@@ -404,10 +423,25 @@ def test_all(seed_image_ids):
     read_test(seed_image_ids, 5)
     read_all_results(0, seed_image_ids)
 
-
 def run_script(filename):
     print "Running " + filename
     subprocess.call(filename)
+
+
+def run_scripts(filenames, max_workers):
+    # This results in a 3.14x speed up using 6 workers to classify because the classification tool is CPU heavy
+    start_time = time.time()
+    processes = (Popen(cmd, shell=True) for cmd in filenames)
+    running_processes = list(islice(processes, max_workers))  # start new processes
+    while running_processes:
+        time.sleep(.001)  # Sleep for a ms so this loop does not waste CPU
+        for i, process in enumerate(running_processes):
+            if process.poll() is not None:  # the process has finished
+                running_processes[i] = next(processes, None)  # start new process
+                if running_processes[i] is None:  # no new processes
+                    del running_processes[i]
+                    break
+    print 'All scripts run in %s seconds' % (time.time() - start_time,)
 
 
 def create_new_indexes(total_new_seed_imgs, total_new_test_imgs):
@@ -514,6 +548,9 @@ def get_multi_point_error_test_image_ids():
                 coin_results[coin_id] = []
             coin_results[coin_id].append([test_image_id, seed_image_id, max_value, angle])
 
+    bad_angle_grand_total = 0
+    bad_seed_grand_total = 0
+
     for coin_id, values in coin_results.iteritems():
         if coin_id == 42:
             pass
@@ -526,7 +563,7 @@ def get_multi_point_error_test_image_ids():
             result = test_values[2]
             if seed_image_id not in seed_image_id_counts.iterkeys():
                 seed_image_id_counts[seed_image_id] = 0
-            seed_image_id_counts[seed_image_id] += result
+            seed_image_id_counts[seed_image_id] += 1
 
         major_seed_image_id = max(seed_image_id_counts.iteritems(), key=operator.itemgetter(1))[0]
 
@@ -538,6 +575,8 @@ def get_multi_point_error_test_image_ids():
             test_angle = test_values[3]
             if seed_image_id != major_seed_image_id:
                 bad_seed_total += 1
+                bad_seed_grand_total +=1
+
                 multi_point_error_test_image_ids.append(test_image_id)
                 continue
             correct_values.append(test_values)
@@ -553,9 +592,12 @@ def get_multi_point_error_test_image_ids():
                 test_angle_difference = abs(test_angle_difference - 360)
             if test_angle_difference > angle_tolerance:
                 bad_angle_total += 1
-                multi_point_error_test_image_ids.append(test_image_id)
-        print coin_id, len(values), bad_seed_total, bad_angle_total
+                bad_angle_grand_total += 1
 
+                multi_point_error_test_image_ids.append(test_image_id)
+        print coin_id, len(values), 'Good:', len(values) - (
+        bad_angle_total + bad_seed_total), 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
+    print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total
     return sorted(list(set(multi_point_error_test_image_ids)))
 
 
@@ -589,49 +631,45 @@ def get_multi_point_error_test_image_ids():
 # Multi-Point Works awesome ************************************************************************************
 start_time = time.time()
 test_image_ids = []
-#seed_image_ids = [6100, 12600, 14300]
-# seed_image_ids = [0, 100, 23700, 15700, 29300, 19500, 22000, 18200, 22800, 20400, 24800, 22400, 22300, 23500, 25100,
-#                   22600, 20700, 15800, 18800, 26200, 20000, 20800, 18700, 21600, 16300, 14300]
-#seed_image_ids = [16300,23700]
-seed_image_ids = [4300, 20500, 10204, 26800, 9600, 1400, 5300, 6400, 6800, 8001, 3600, 4800, 302, 402, 500, 600, 908,
-                  2300, 3510, 4010, 4807]
+seed_image_ids = [0, 100, 15700, 29300, 19500, 22000, 18200, 22800, 20400, 24800, 22400, 22300, 23500, 25100,
+                  22600, 20700, 15800, 18800, 26200, 20000, 20800, 18700, 21600, 16300, 14300]
+# seed_image_ids = [100, 16300]
+
+# dates:
+# seed_image_ids = [4300, 20500, 10204, 26800, 9600, 1400, 5300, 6400, 6800, 8001, 3600, 4800, 302, 402, 500, 600, 908,
+#                  2300, 3510, 4010, 4807]
+seed_image_ids = sorted(seed_image_ids)
+pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 
 widen_seed_image_ids = [4800, 3600]
 
-
 # init_dir()
 # save_multi_point_ids()
-pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-# for coin_id in range(0,305):
-#     if coin_id in seed_image_data.iterkeys():
-#         for image_id in seed_image_data[coin_id]:
-#             test_image_ids.append(coin_id * 100 + image_id)
-# pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
-#
-# #create_test_lmdbs(0)
-#
-# for seed_image_id in seed_image_ids:
-# filedata = []
-# seed_images = seed_image_data[int(seed_image_id / 100)]
-# for image_id in seed_images:
-#     test_image_id = seed_image_id + image_id
-#     filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
-# # the test_id = 5 just adds more data for now:
-# create_single_lmdb(seed_image_id, filedata, 0, True, 700)
-# run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-# create_test_script(seed_image_id, 0, True)
-# run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+#seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
 
-# read_test(seed_image_ids, 360)
+# scripts_to_run = []
+# for seed_image_id in seed_image_ids:
+#     filedata = []
+#     seed_images = seed_image_data[int(seed_image_id / 100)]
+#     for image_id in seed_images:
+#         test_image_id = seed_image_id + image_id
+#         filedata.append([test_image_id, crop_dir + str(test_image_id) + '.png', 0])
+#     # # the test_id = 5 just adds more data for now:
+#     # create_single_lmdb(seed_image_id, filedata, 0, True, 700)
+#     # run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+#     create_test_script(seed_image_id, 0, True)
+#     scripts_to_run.append(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+#     #run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+# run_scripts(scripts_to_run,max_workers=6)
+#
+#
+#read_test(seed_image_ids, 360)
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 print 'The following test_image_ids where taking out of the image:'
 print multi_point_error_test_image_ids
 print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
 image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
-
-# image_set.create_composite_images(crop_dir, html_dir, 125, 40, 10, None, multi_point_error_test_image_ids)
 image_set.create_composite_image(crop_dir, html_dir, 140, 100, 10, multi_point_error_test_image_ids)
 print 'Done in %s seconds' % (time.time() - start_time,)
 sys.exit("End")
