@@ -9,7 +9,7 @@ from caffe.proto import caffe_pb2
 
 
 def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size, scale):
-    pixels_to_jitter = 50 * scale
+    pixels_to_jitter = 35 * scale
     # pixels_to_jitter = 1 #Old Way
 
     center_x = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter

@@ -76,15 +76,25 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
             # max_value = max_value * adjustment * .7
 
             # This is cheating by know how the models will perform and what the class sizes are.
-            if seed_image_id in (100, 999):
-                max_value = max_value * .95
+                    # if seed_image_id in ( 21600,22300,25100):
+                    #     max_value = max_value * .85
+                    #
+                    # if seed_image_id in (100,999):
+                    #     max_value = max_value * .68
+                    #
+                    # if seed_image_id in (26200, 29300):
+                    #     max_value = max_value * 1.05
+                    #
+                    # if seed_image_id in (0, 999):
+                    #     max_value = max_value * 1.35
+                    #
+                    # if seed_image_id in (22400, 999):
+                    #     max_value = max_value * 1.0
+                    #
+                    # if seed_image_id in (20000, 26200, 15700,16300):
+                    #     max_value = max_value * 1.4
 
-            if seed_image_id in (0, 999,):
-                max_value = max_value * 1.5
-
-            if seed_image_id in (16300, 26200, 22400, 15700):
-                max_value = max_value * 1.4
-            # #
+                    # #
             # if seed_image_id in (20000,19500,15700,9999):
             #     max_value = max_value * 1.4
             #
@@ -413,10 +423,12 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
     misclassify_count = 0
     seeds = []
     seed_totals = {}
+    predicted_totals = {}
     for coin_id in range(0, 306):
         if ground_truth_coin_ids[coin_id][0] not in seeds:
             seeds.append(ground_truth_coin_ids[coin_id][0])
             seed_totals[ground_truth_coin_ids[coin_id][0]] = 0
+            predicted_totals[ground_truth_coin_ids[coin_id][0]] = 0
         if coin_id not in coin_id_seed_id.iterkeys():
             # 204 is just the bad dump coin_id for now.
             # Wow this is sloppy code! It's hard when you can't plan it out.
@@ -430,22 +442,29 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
     seeds.sort()
     print 'Misclassify Count:', misclassify_count
 
-    confusion_matrix = 'ID\t'
+    confusion_matrix = '\t\t\t'
     for ground_truth_seed_id in seeds:
         confusion_matrix += str(ground_truth_seed_id) + '\t'
-    confusion_matrix += 'Total,Per-Class Accuracy\n'
+    confusion_matrix += 'Actual\n'
     for ground_truth_seed_id in seeds:
         total = 0
-        line = str(ground_truth_seed_id)
+        line = 'Actual:\t' + str(ground_truth_seed_id)
         for coin_id in range(0, 306):
             if ground_truth_coin_ids[coin_id][0] == ground_truth_seed_id:
                 seed_totals[coin_id_seed_id[coin_id][0]] += 1
+                predicted_totals[coin_id_seed_id[coin_id][0]] += 1
                 total += 1
         for coin_id in seeds:
             line += '\t' + str(seed_totals[coin_id])
             seed_totals[coin_id] = 0
-        confusion_matrix += line + '\t' + str(total) + '\n'
-    print confusion_matrix
+        confusion_matrix += line + '\t\t' + str(total) + '\n'
+    total = 0
+    line = 'Pred Total:'
+    for coin_id in seeds:
+        line += '\t' + str(predicted_totals[coin_id])
+        total += predicted_totals[coin_id]
+    line += '\t\t' + str(total)
+    print confusion_matrix + line
 
 
 # pickle.dump(coin_id_seed_id, open(data_dir + 'ground_truth_coin_ids.pickle', "wb"))

@@ -552,8 +552,6 @@ def get_multi_point_error_test_image_ids():
     bad_seed_grand_total = 0
 
     for coin_id, values in coin_results.iteritems():
-        if coin_id == 42:
-            pass
         bad_angle_total = 0
         bad_seed_total = 0
 
@@ -593,10 +591,9 @@ def get_multi_point_error_test_image_ids():
             if test_angle_difference > angle_tolerance:
                 bad_angle_total += 1
                 bad_angle_grand_total += 1
-
                 multi_point_error_test_image_ids.append(test_image_id)
-        print coin_id, len(values), 'Good:', len(values) - (
-        bad_angle_total + bad_seed_total), 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
+        good = len(values) - (bad_angle_total + bad_seed_total)
+        print coin_id, len(values), 'Good:', good, 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
     print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total
     return sorted(list(set(multi_point_error_test_image_ids)))
 
@@ -642,7 +639,6 @@ seed_image_ids = sorted(seed_image_ids)
 pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 
 widen_seed_image_ids = [4800, 3600]
-
 
 bad_coin_ids = []
 bad_coin_ids.append([0, 165])
@@ -720,8 +716,8 @@ ground_truth[179] = 187
 # init_dir()
 save_multi_point_ids()
 seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-# #
-# create_test_lmdbs(0,1)
+#
+# create_test_lmdbs(0,6)
 #
 # scripts_to_run = []
 # for seed_image_id in seed_image_ids:
@@ -738,8 +734,8 @@ seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
 #     #run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 # run_scripts(scripts_to_run,max_workers=6)
 #
-#
-#read_test(seed_image_ids, 360)
+# read_test(seed_image_ids, 360)
+
 
 # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
@@ -748,6 +744,7 @@ print 'The following test_image_ids where taking out of the image:'
 print multi_point_error_test_image_ids
 print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
 image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+#image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 #image_set.create_composite_image(crop_dir, data_dir, 140, 100, 10, multi_point_error_test_image_ids)
 
 print 'Done in %s seconds' % (time.time() - start_time,)

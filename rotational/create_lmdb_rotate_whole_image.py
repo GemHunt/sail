@@ -22,7 +22,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     classes = 360
     mask = None
     # radii = [28, 42, 64, 96, 146, 224]
-    radii = [28, 42, 64, 96]
+    radii = [64, 96, 146, 224]
     file_radius = 224
 
     # For Dates:
