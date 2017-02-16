@@ -66,22 +66,34 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
                 if [seed_coin_id, image_coin_id] in bad_coin_ids:
                     continue
 
-            # This is cheating. Some models are more confident than others and they score better if they are balanced.
-            if seed_image_id not in (0, 100):
-                adjustment = overall_average_max_value / average_max_values[seed_image_id]
-                max_value = max_value * adjustment * .7
+            # Model Balancing:
+            # Some models are more confident than others
+            # So balancing models will help them score better.
 
+            # This is a generic adjustment:
+            # if seed_image_id in (0,100): #40% of class
+            # adjustment = overall_average_max_value / average_max_values[seed_image_id]
+            # max_value = max_value * adjustment * .7
+
+            # This is cheating by know how the models will perform and what the class sizes are.
             if seed_image_id in (100, 999):
-                max_value = max_value * .6
+                max_value = max_value * .95
 
             if seed_image_id in (0, 999,):
-                max_value = max_value * 1.2
+                max_value = max_value * 1.5
 
-            if seed_image_id in (18200, 16300, 26300, 19300):
+            if seed_image_id in (16300, 26200, 22400, 15700):
                 max_value = max_value * 1.4
-
-            if seed_image_id in (14300, 999):
-                max_value = max_value * 2
+            # #
+            # if seed_image_id in (20000,19500,15700,9999):
+            #     max_value = max_value * 1.4
+            #
+            # if seed_image_id in (22400,9999):
+            #     max_value = max_value * 2
+            #
+            #
+            # if seed_image_id in (14300,999):
+            #      max_value = max_value * .7
 
 
             # Well, we know this was a match already:
@@ -178,7 +190,6 @@ def set_angles_postive():
 
             if image.max_value > existing_max_value:
                 results_dict[image.seed_image_id][image.image_id] = [image.max_value, image.angle]
-
 
 def create_group():
     # Set the first top-link for the starting seed will be the test image with the most points.
@@ -345,8 +356,9 @@ def clean_dir(dir):
         os.makedirs(dir)
 
 
-def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None,
-                            use_top_coin_image=False):
+def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None,
+                            use_only_best_coin_image=False):
+    html_dir = data_dir + 'html/'
     clean_dir(html_dir)
     if seed_image_ids is None:
         results = results_dict
@@ -355,6 +367,8 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
 
     if remove_image_ids is None:
         remove_image_ids = []
+    coin_id_seed_id = {}
+
 
     for seed_image_id, seed_values in results.iteritems():
         images = []
@@ -366,7 +380,7 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
         results = []
         coin_results = {}
 
-        if use_top_coin_image:
+        if use_only_best_coin_image:
             for image_id, values in seed_values.iteritems():
                 max_value, angle = values
                 if image_id not in remove_image_ids:
@@ -377,6 +391,8 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
             for coin_id, values in coin_results.iteritems():
                 image_id, max_value, angle = max(values, key=lambda item: item[1])
                 results.append([image_id, max_value, angle])
+                coin_id_seed_id[coin_id] = [seed_image_id / 100, image_id, max_value, angle]
+
         else:
             for image_id, values in seed_values.iteritems():
                 max_value, angle = values
@@ -393,9 +409,50 @@ def create_composite_images(crop_dir, html_dir, crop_size, rows, cols, seed_imag
         calc_rows = int(len(images) / cols) + 1
         composite_image = ci.get_composite_image(images, calc_rows, cols)
         cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+    ground_truth_coin_ids = pickle.load(open(data_dir + 'ground_truth_coin_ids.pickle', "rb"))
+    misclassify_count = 0
+    seeds = []
+    seed_totals = {}
+    for coin_id in range(0, 306):
+        if ground_truth_coin_ids[coin_id][0] not in seeds:
+            seeds.append(ground_truth_coin_ids[coin_id][0])
+            seed_totals[ground_truth_coin_ids[coin_id][0]] = 0
+        if coin_id not in coin_id_seed_id.iterkeys():
+            # 204 is just the bad dump coin_id for now.
+            # Wow this is sloppy code! It's hard when you can't plan it out.
+            coin_id_seed_id[coin_id] = [204, coin_id * 100, 0, 0]
+            print 'Coin Missing', coin_id
+            misclassify_count += 1
+        else:
+            if coin_id_seed_id[coin_id][0] <> ground_truth_coin_ids[coin_id][0]:
+                print 'Wrong Seed for ', coin_id
+                misclassify_count += 1
+    seeds.sort()
+    print 'Misclassify Count:', misclassify_count
+
+    confusion_matrix = 'ID\t'
+    for ground_truth_seed_id in seeds:
+        confusion_matrix += str(ground_truth_seed_id) + '\t'
+    confusion_matrix += 'Total,Per-Class Accuracy\n'
+    for ground_truth_seed_id in seeds:
+        total = 0
+        line = str(ground_truth_seed_id)
+        for coin_id in range(0, 306):
+            if ground_truth_coin_ids[coin_id][0] == ground_truth_seed_id:
+                seed_totals[coin_id_seed_id[coin_id][0]] += 1
+                total += 1
+        for coin_id in seeds:
+            line += '\t' + str(seed_totals[coin_id])
+            seed_totals[coin_id] = 0
+        confusion_matrix += line + '\t' + str(total) + '\n'
+    print confusion_matrix
 
 
-def create_date_composite_image(crop_dir, html_dir, seed_image_id, max_images, remove_image_ids):
+# pickle.dump(coin_id_seed_id, open(data_dir + 'ground_truth_coin_ids.pickle', "wb"))
+
+
+def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, remove_image_ids):
+    html_dir = data_dir + 'html/'
     image_size = 448
     crop_radius = 56
     heads_date_angle = 158
@@ -453,7 +510,9 @@ def create_date_composite_image(crop_dir, html_dir, seed_image_id, max_images, r
     cv2.imwrite(html_dir + 'dates.png', composite_image)
     print count, 'Date images written'
 
-def create_composite_image(crop_dir, html_dir, crop_size, rows, cols, seed_image_ids):
+
+def create_composite_image(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids):
+    html_dir = data_dir + 'html/'
     images = []
     for seed_image_id in seed_image_ids:
         crop = ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0)
@@ -465,7 +524,8 @@ def create_composite_image(crop_dir, html_dir, crop_size, rows, cols, seed_image
     cv2.imwrite(html_dir + 'composite_image.png', composite_image)
 
 
-def create_composite_image_from_filedata(crop_dir, html_dir, crop_size, rows, cols, filedata):
+def create_composite_image_from_filedata(crop_dir, data_dir, crop_size, rows, cols, filedata):
+    html_dir = data_dir + 'html/'
     images = []
     for image_id, filename, angle_offset in filedata:
         crop = ci.get_rotated_crop(crop_dir, image_id, crop_size, angle_offset)

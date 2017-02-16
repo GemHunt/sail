@@ -21,7 +21,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     before_rotate_size = 56
     classes = 360
     mask = None
-    radii = [28, 42, 64, 96, 146, 224]
+    # radii = [28, 42, 64, 96, 146, 224]
+    radii = [28, 42, 64, 96]
     file_radius = 224
 
     # For Dates:
@@ -80,10 +81,21 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         for radius in radii:
             # crop = gray[144:304, 144:304]
             # graycopy = gray.copy()
+            # if radius== 224:
+            #  x_jitter = 0
+            #   y_jitter = 0
+            # else:
+            # pixels_to_jitter = 10
+            #  x_jitter = (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
+            #   y_jitter = (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
+
+            #crop = gray[(file_radius - radius)+x_jitter :(file_radius + radius)+x_jitter, (file_radius - radius)+y_jitter:(file_radius + radius)+y_jitter]
             crop = gray[file_radius - radius:file_radius + radius, file_radius - radius:file_radius + radius]
             crop = cv2.resize(crop, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
             sized_crops.append(crop)
         crops.append(sized_crops)
+
+
 
         # mask = ci.get_circle_mask(crop_size)
 
@@ -94,10 +106,9 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
                 phase = 'train'
             if train_vs_val == 4:
                 phase = 'val'
-
     key = 0
 
-    number_of_angles = images_per_angle * 360
+    number_of_angles = int(images_per_angle * 360)
     if not create_val_set:
         # You have to more test images if this is the test set:
         number_of_angles *= len(crops)
@@ -105,12 +116,13 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
 
     for random_float, angle, class_angle in angles:
         random_index = random.randint(0, len(crops) - 1)
-        random_sized_crop_index = random.randint(0, len(radii) - 1)
-        crop = crops[random_index][random_sized_crop_index]
+        random_sized_scale_index = random.randint(0, len(radii) - 1)
+        crop = crops[random_index][random_sized_scale_index]
         image_id = filedata[random_index][0]
         angle_offset = filedata[random_index][2]
         angle_to_rotate = angle + angle_offset
-        rot_image = ci.get_whole_rotated_image(crop, mask, angle_to_rotate, crop_size, before_rotate_size)
+        scale = (crop_size / 2) / float(radii[random_sized_scale_index])
+        rot_image = ci.get_whole_rotated_image(crop, mask, angle_to_rotate, crop_size, before_rotate_size, scale)
 
         if create_files:
             cv2.imwrite(img_dir + '/' + str(class_angle + 1000) + '/' + str(id) + str(angle).zfill(5) + '.png',

@@ -8,9 +8,12 @@ import cv2
 from caffe.proto import caffe_pb2
 
 
-def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size):
-    center_x = before_rotate_size / 2 + (random.random() * 2) - 1
-    center_y = before_rotate_size / 2 + (random.random() * 2) - 1
+def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size, scale):
+    pixels_to_jitter = 50 * scale
+    # pixels_to_jitter = 1 #Old Way
+
+    center_x = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
+    center_y = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
 
     rot_image = crop.copy()
     rot_image = rotate(rot_image, angle, center_x, center_y, before_rotate_size, before_rotate_size)
@@ -20,7 +23,6 @@ def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size):
 
     # rot_image = rot_image * mask
     return rot_image
-
 
 def get_circle_mask(crop_size):
     mask = np.zeros((crop_size, crop_size), dtype=np.uint8)
