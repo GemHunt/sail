@@ -419,6 +419,8 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
         calc_rows = int(len(images) / cols) + 1
         composite_image = ci.get_composite_image(images, calc_rows, cols)
         cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+    return
+
     ground_truth_coin_ids = pickle.load(open(data_dir + 'ground_truth_coin_ids.pickle', "rb"))
     misclassify_count = 0
     seeds = []
@@ -473,11 +475,13 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
 def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, remove_image_ids):
     html_dir = data_dir + 'html/'
     image_size = 448
-    crop_radius = 56
-    heads_date_angle = 158
-    date_center_offset = 166
+    crop_radius = 28
+    heads_date_angle = 220
+    #date_center_offset = 166
+    date_center_offset = 172
+
     # This is the angle seed 100 was imaged at:
-    seed_id_100_angle = 148
+    seed_id_100_angle = 75
 
     # closer up for translation:
     # crop_radius = 28
@@ -499,9 +503,13 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
 
     count = 0
     for image_id, max_value, angle in sorted_results:
+        if image_id  % 54 != 0:
+            continue
         if count >= max_images:
             continue
-        crop = cv2.imread(crop_dir + str(image_id) + '.png')
+        filename = ci.get_filename_from(image_id,crop_dir)
+        crop = cv2.imread(filename)
+
         if crop == None:
             pass
 
@@ -525,7 +533,7 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
         count += 1
 
     calc_rows = int(len(images) / 10) + 1
-    composite_image = ci.get_composite_image(images, calc_rows, 10)
+    composite_image = ci.get_composite_image(images, calc_rows, 20)
     cv2.imwrite(html_dir + 'dates.png', composite_image)
     print count, 'Date images written'
 

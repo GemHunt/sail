@@ -1,8 +1,8 @@
 test_iter: 282
 test_interval: 422
-base_lr: 0.002
+base_lr: 0.004
 display: 52
-max_iter: 8440
+max_iter: 16880
 lr_policy: "fixed"
 momentum: 0.9
 weight_decay: 8e-05

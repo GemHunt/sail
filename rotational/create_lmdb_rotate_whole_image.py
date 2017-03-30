@@ -21,8 +21,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     before_rotate_size = 56
     classes = 360
     mask = None
-    # radii = [28, 42, 64, 96, 146, 224]
-    radii = [64, 96, 146, 224]
+    radii = [28, 42, 64, 96, 146, 224]
+    #radii = [64, 96, 146, 224]
     file_radius = 224
 
     # For Dates:
@@ -70,6 +70,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         # crop = cv2.imread('/home/pkrush/copper/test.png')
         cap = cv2.imread(filename)
         if cap is None:
+            print 'Image is bad'
             continue
         gray = cv2.cvtColor(cap, cv2.COLOR_BGR2GRAY)
 

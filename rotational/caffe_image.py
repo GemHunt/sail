@@ -8,6 +8,17 @@ import cv2
 from caffe.proto import caffe_pb2
 
 
+def get_filename(coin_id, image_id,crop_dir):
+    dir = crop_dir + str(coin_id / 100) + '/'
+    filename = dir + str(coin_id).zfill(5) + str(image_id).zfill(2) + '.png'
+    return filename
+
+def get_filename_from(file_number,crop_dir):
+    coin_id = file_number / 100
+    image_id = file_number % 100
+    return get_filename(coin_id, image_id,crop_dir)
+
+
 def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size, scale):
     pixels_to_jitter = 35 * scale
     # pixels_to_jitter = 1 #Old Way
@@ -44,7 +55,8 @@ def rotate(img, angle, center_x, center_y, rows, cols):
 
 
 def get_rotated_crop(crop_dir, crop_id, crop_size, angle):
-    crop = cv2.imread(crop_dir + str(crop_id) + '.png')
+    filename = get_filename_from(crop_id,crop_dir)
+    crop = cv2.imread(filename)
     if crop == None:
         print crop_id, 'None'
         return None
