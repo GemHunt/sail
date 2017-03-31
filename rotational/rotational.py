@@ -418,9 +418,9 @@ def run_test(seed_image_id, max_value_cutoff, test_id):
     image_set.read_results(max_value_cutoff, data_dir, [seed_image_id])
 
 
-def create_all_test_lmdbs():
+def create_all_test_lmdbs(images_per_angle):
     for test_id in range(1, 6):
-        create_test_lmdbs(test_id)
+        create_test_lmdbs(test_id,images_per_angle)
 
 
 def test_all(seed_image_ids):
@@ -540,13 +540,18 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_multi_point_error_test_image_ids():
+def get_errors_and_angles(min_good_images_per_seed= 20, angle_tolerance=7):
+    # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
     # Find all test_image_ids that the angle is off where the major class is correct
+    # Find the average good angles
+
 
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     coin_results = {}
-    multi_point_error_test_image_ids = []
+    error_test_image_ids = []
+    all_error_test_image_ids = []
+    average_coin_angles = {}
 
     for seed_image_id, images in seeds.iteritems():
         for test_image_id, values in images.iteritems():
@@ -558,6 +563,7 @@ def get_multi_point_error_test_image_ids():
 
     bad_angle_grand_total = 0
     bad_seed_grand_total = 0
+    bad_coin_id_grand_total = 0
 
     for coin_id, values in coin_results.iteritems():
         bad_angle_total = 0
@@ -582,28 +588,52 @@ def get_multi_point_error_test_image_ids():
             if seed_image_id != major_seed_image_id:
                 bad_seed_total += 1
                 bad_seed_grand_total +=1
-
-                multi_point_error_test_image_ids.append(test_image_id)
+                error_test_image_ids.append(test_image_id)
                 continue
             correct_values.append(test_values)
             angles.append(test_angle)
 
         median_angle = np.median(angles)
+        angle_difference_from_median_total = 0
+        count = 0
         for test_values in correct_values:
             test_image_id = test_values[0]
             test_angle = test_values[3]
-            angle_tolerance = 10
-            test_angle_difference = abs(median_angle - test_angle)
-            if test_angle_difference > 359 - angle_tolerance:
-                test_angle_difference = abs(test_angle_difference - 360)
-            if test_angle_difference > angle_tolerance:
+            angle_difference_from_median = abs(median_angle - test_angle)
+            if angle_difference_from_median > 359 - angle_tolerance:
+                angle_difference_from_median = abs(angle_difference_from_median - 360)
+            if angle_difference_from_median > angle_tolerance:
                 bad_angle_total += 1
                 bad_angle_grand_total += 1
-                multi_point_error_test_image_ids.append(test_image_id)
+                error_test_image_ids.append(test_image_id)
+            else:
+                angle_difference_from_median_total += angle_difference_from_median
+                count +=1
         good = len(values) - (bad_angle_total + bad_seed_total)
+        if count != 0:
+            average_angle_difference_from_median = angle_difference_from_median_total / count
+            average_coin_angles[coin_id] = get_normal_angle (median_angle + average_angle_difference_from_median)
+            print 'Average Angle',  average_coin_angles[coin_id]
+
+        if min_good_images_per_seed > good:
+            bad_coin_id_grand_total += 1
+            for test_values in values:
+                test_image_id = test_values[0]
+                error_test_image_ids.append(test_image_id)
+        all_error_test_image_ids.extend(error_test_image_ids)
+
+
         print coin_id, len(values), 'Good:', good, 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
-    print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total
-    return sorted(list(set(multi_point_error_test_image_ids)))
+    print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total, 'bad_coin_id_grand_total:' , bad_coin_id_grand_total
+    return sorted(list(set(all_error_test_image_ids))), average_coin_angles
+
+def get_normal_angle(angle):
+    if angle > 0 and angle < 360:
+        return angle
+    if angle < 0:
+        return angle + 360
+    if angle >= 360:
+        return angle - 360
 
 
 # *****************************************************************************
@@ -641,10 +671,10 @@ new_seed_image_ids = []
 count = 0
 seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
 for coin_id in seed_image_ids:
-    if (count < 700000) and (coin_id % 2 == 0):
+    if (count < 700) and (coin_id % 2 == 0):
         new_seed_image_ids.append(coin_id * 100)
         new_seed_image_ids.append((coin_id +3) * 100)
-        for image_id in range(54,55):
+        for image_id in range(0,57):
             new_test_image_ids.append(coin_id * 100 + image_id)
             new_test_image_ids.append((coin_id +3) * 100 + image_id)
         count += 2
@@ -656,14 +686,14 @@ pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
 start_time = time.time()
 seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+seed_image_ids = (200,1100)
+scripts_to_run = []
+images_per_angle = 200
 #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 #test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-seed_image_ids = (200,1100)
 
 #create_test_lmdbs(0,3)
 
-
-# scripts_to_run = []
 # for seed_image_id in seed_image_ids:
 #     filedata = []
 #     seed_images = seed_image_data[int(seed_image_id / 100)]
@@ -672,7 +702,7 @@ seed_image_ids = (200,1100)
 #         filename = get_filename_from(test_image_id)
 #         filedata.append([test_image_id, filename, 0])
 #     # # the test_id = 5 just adds more data for now:
-#     #create_single_lmdb(seed_image_id, filedata, 0, True, 200)
+#     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
 #     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
 #     create_test_script(seed_image_id, 0, True)
 #     scripts_to_run.append(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
@@ -710,15 +740,17 @@ seed_image_ids = (200,1100)
 
 # ********
 # Step 3:
-# Check out all test image results
-# create_seed_and_test_random(0,14500)
-# create_all_test_lmdbs()
+#Check out all test image results
+#create_seed_and_test_random(0,14500)
+create_all_test_lmdbs(images_per_angle)
 # create_test_lmdbs(0)
-# for seed_image_id in seed_image_ids:
-#     for test_id in range(0, 6):
-#         create_test_script(seed_image_id, test_id, True)
-#         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
-# read_test(seed_image_ids, 360)
+for seed_image_id in seed_image_ids:
+    for test_id in range(0, 6):
+        create_test_script(seed_image_id, test_id, True)
+        script_filename = test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh'
+        scripts_to_run.append(script_filename)
+run_scripts(scripts_to_run,max_workers=2)
+read_test(seed_image_ids, 360)
 
 # image_set.read_results(10, data_dir, seeds_share_test_images=True)
 # multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
@@ -732,6 +764,6 @@ seed_image_ids = (200,1100)
 
 #Dates  ************************************************************************************
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
-multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
 # Create a composite image for dates:
-image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids)
+image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)

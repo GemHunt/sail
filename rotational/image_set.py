@@ -472,7 +472,10 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
 # pickle.dump(coin_id_seed_id, open(data_dir + 'ground_truth_coin_ids.pickle', "wb"))
 
 
-def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, remove_image_ids):
+def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, remove_image_ids,coin_angles):
+    #todo:OK how are heads_date_angle and date_center_offset releated?
+    #I think this is only one angle.
+
     html_dir = data_dir + 'html/'
     image_size = 448
     crop_radius = 28
@@ -507,17 +510,21 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
             continue
         if count >= max_images:
             continue
+        coin_id = image_id / 100
+        coin_angle = coin_angles[coin_id]
+        #print angle, coin_angle
+
         filename = ci.get_filename_from(image_id,crop_dir)
         crop = cv2.imread(filename)
 
         if crop == None:
             pass
 
-        center_x = image_size / 2 + math.cos(math.radians(heads_date_angle + angle)) * date_center_offset
-        center_y = image_size / 2 - math.sin(math.radians(heads_date_angle + angle)) * date_center_offset
-        print image_id, max_value, angle, center_x, center_y
+        center_x = image_size / 2 + math.cos(math.radians(heads_date_angle + coin_angle)) * date_center_offset
+        center_y = image_size / 2 - math.sin(math.radians(heads_date_angle + coin_angle)) * date_center_offset
+        print image_id, max_value, coin_angle, center_x, center_y
         date_crop = crop[center_x - crop_radius:center_x + crop_radius, center_y - crop_radius:center_y + crop_radius]
-        rotated_date_crop = ci.rotate(date_crop, angle - seed_id_100_angle, crop_radius, crop_radius, crop_radius * 2,
+        rotated_date_crop = ci.rotate(date_crop, coin_angle - seed_id_100_angle, crop_radius, crop_radius, crop_radius * 2,
                                       crop_radius * 2)
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(rotated_date_crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
