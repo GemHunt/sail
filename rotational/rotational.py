@@ -540,7 +540,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_errors_and_angles(min_good_images_per_seed= 20, angle_tolerance=7):
+def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
     # Find all test_image_ids that the angle is off where the major class is correct
@@ -664,14 +664,14 @@ def get_normal_angle(angle):
 # create_new_indexes(30, 500)
 
 # Multi-Point Works awesome ************************************************************************************
-# init_dir()
+init_dir()
 test_image_ids = []
 new_test_image_ids = []
 new_seed_image_ids = []
 count = 0
 seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
 for coin_id in seed_image_ids:
-    if (count < 700) and (coin_id % 2 == 0):
+    if (count < 16) and (coin_id % 2 == 0):
         new_seed_image_ids.append(coin_id * 100)
         new_seed_image_ids.append((coin_id +3) * 100)
         for image_id in range(0,57):
@@ -692,24 +692,24 @@ images_per_angle = 200
 #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 #test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 
-#create_test_lmdbs(0,3)
+create_test_lmdbs(0,1)
 
-# for seed_image_id in seed_image_ids:
-#     filedata = []
-#     seed_images = seed_image_data[int(seed_image_id / 100)]
-#     for image_id in seed_images:
-#         test_image_id = seed_image_id + image_id
-#         filename = get_filename_from(test_image_id)
-#         filedata.append([test_image_id, filename, 0])
-#     # # the test_id = 5 just adds more data for now:
-#     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
-#     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-#     create_test_script(seed_image_id, 0, True)
-#     scripts_to_run.append(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-#     #run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-#
-# run_scripts(scripts_to_run,max_workers=2)
-# read_test(seed_image_ids, 360)
+for seed_image_id in seed_image_ids:
+    filedata = []
+    seed_images = seed_image_data[int(seed_image_id / 100)]
+    for image_id in seed_images:
+        test_image_id = seed_image_id + image_id
+        filename = get_filename_from(test_image_id)
+        filedata.append([test_image_id, filename, 0])
+    # # the test_id = 5 just adds more data for now:
+    #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
+    #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    create_test_script(seed_image_id, 0, True)
+    scripts_to_run.append(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+    #run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+
+run_scripts(scripts_to_run,max_workers=2)
+read_test(seed_image_ids, 360)
 #
 # # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
 # image_set.read_results(0, data_dir, seeds_share_test_images=False)
@@ -742,15 +742,15 @@ images_per_angle = 200
 # Step 3:
 #Check out all test image results
 #create_seed_and_test_random(0,14500)
-create_all_test_lmdbs(images_per_angle)
+#create_all_test_lmdbs(3)
 # create_test_lmdbs(0)
-for seed_image_id in seed_image_ids:
-    for test_id in range(0, 6):
-        create_test_script(seed_image_id, test_id, True)
-        script_filename = test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh'
-        scripts_to_run.append(script_filename)
-run_scripts(scripts_to_run,max_workers=2)
-read_test(seed_image_ids, 360)
+# for seed_image_id in seed_image_ids:
+#     for test_id in range(0, 6):
+#         create_test_script(seed_image_id, test_id, True)
+#         script_filename = test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh'
+#         scripts_to_run.append(script_filename)
+# run_scripts(scripts_to_run,max_workers=2)
+# read_test(seed_image_ids, 360)
 
 # image_set.read_results(10, data_dir, seeds_share_test_images=True)
 # multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()

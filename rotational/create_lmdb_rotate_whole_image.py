@@ -60,14 +60,9 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
 
     # for filename in glob.iglob('/home/pkrush/copper/test/*.png'):
     for image_id, filename, angle_offset in filedata:
-        print image_id
-        # imageid = filename[-9:]
-        # imageid = imageid[:5]
         id += 1
         if id > max_images - 1:
             break
-
-        # crop = cv2.imread('/home/pkrush/copper/test.png')
         cap = cv2.imread(filename)
         if cap is None:
             print 'Image is bad'
@@ -96,8 +91,6 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
             sized_crops.append(crop)
         crops.append(sized_crops)
 
-
-
         # mask = ci.get_circle_mask(crop_size)
 
         phase = 'train'
@@ -113,9 +106,12 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     if not create_val_set:
         # You have to more test images if this is the test set:
         number_of_angles *= len(crops)
-    angles = ci.get_angle_sequence(number_of_angles, test_id)
+    angles = ci.get_angle_sequence(number_of_angles, -1)
 
+    print 'len(angles)',len(angles)
     for random_float, angle, class_angle in angles:
+        #The rotate(80us), the encode(40us), and drive write(80ms) take up the most amount of time here.
+        loop_time = time.time()
         random_index = random.randint(0, len(crops) - 1)
         random_sized_scale_index = random.randint(0, len(radii) - 1)
         crop = crops[random_index][random_sized_scale_index]
@@ -162,11 +158,18 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
         if phase == 'val':
             # val_image_batch.append([str(image_id) + "," + str(angle + 1000), datum])
             val_image_batch.append([str_id.encode('ascii'), datum])
+        if len(train_image_batch) > 10000:
+            loop_time = time.time()
+            caffe_lmdb.write_batch_to_lmdb(train_image_db, train_image_batch)
+            caffe_lmdb.write_batch_to_lmdb(val_image_db, val_image_batch)
+            print 'Write batch after %s micro seconds' % ((time.time() - loop_time)*1000000,)
+            train_image_batch = []
+            val_image_batch = []
 
-    caffe_lmdb.write_batch_to_lmdb(train_image_db, train_image_batch)
-    caffe_lmdb.write_batch_to_lmdb(val_image_db, val_image_batch)
-    train_image_batch = []
-    val_image_batch = []
+
+    if len(train_image_batch) > 0:
+        caffe_lmdb.write_batch_to_lmdb(train_image_db, train_image_batch)
+        caffe_lmdb.write_batch_to_lmdb(val_image_db, val_image_batch)
 
     # label_batch = []
 
