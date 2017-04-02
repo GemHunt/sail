@@ -29,12 +29,9 @@ crop_dir = '/home/pkrush/cents-test/'
 data_dir = home_dir + 'metadata/'
 train_dir = home_dir + 'train/'
 test_dir = home_dir + 'test/'
-test_angles = {0: (30, 330), 1: (60, 300), 2: (90, 270), 3: (120, 240), 4: (150, 210), 5: (180, 180)}
 
 def init_dir():
     directories = [home_dir, data_dir, crop_dir, train_dir, test_dir]
-    for test_id in range(0, 6):
-        directories.append(test_dir + str(test_id) + '/')
     make_dir(directories)
 
 
@@ -99,7 +96,6 @@ def get_filename_from(file_number):
     coin_id = file_number / 100
     image_id = file_number % 100
     return get_filename(coin_id, image_id)
-
 
 
 def get_seed_image_ids():
@@ -302,24 +298,6 @@ def create_single_lmdb(seed_image_id, filedata, test_id, multi_image_training=Fa
     create_train_script(lmdb_dir, train_dir + weight_filename, multi_image_training)
     print 'Done in %s seconds' % (time.time() - start_time,)
 
-
-def create_test_lmdbs(test_id, images_per_angle):
-    print "Create_test_lmdbs for testID:" + str(test_id)
-    test_image_ids = get_test_image_ids()
-    filedata = []
-    lmdb_dir = test_dir + str(test_id) + '/'
-    for file_number in test_image_ids:
-        filedata.append([file_number, get_filename_from(file_number), 0])
-
-    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, False, False)
-
-    shell_filenames = []
-    seed_image_ids = get_seed_image_ids()
-
-    for image_id in seed_image_ids:
-        shell_filenames.append( create_test_script(image_id,test_id))
-    create_script_calling_script(test_dir + 'test_all.sh', shell_filenames)
-
 def create_test_script(image_id,test_id,multi_image_training = False ):
     shell_script = 'cd ' + train_dir + str(image_id) + '/\n'
     shell_script += '/home/pkrush/caffe/.build_release/examples/cpp_classification/classification.bin '
@@ -416,12 +394,6 @@ def run_test(seed_image_id, max_value_cutoff, test_id):
         run_script(test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh')
     read_test([seed_image_id], test_id)
     image_set.read_results(max_value_cutoff, data_dir, [seed_image_id])
-
-
-def create_all_test_lmdbs(images_per_angle):
-    for test_id in range(1, 6):
-        create_test_lmdbs(test_id,images_per_angle)
-
 
 def test_all(seed_image_ids):
     for seed_image_id in seed_image_ids:
@@ -635,6 +607,25 @@ def get_normal_angle(angle):
     if angle >= 360:
         return angle - 360
 
+def create_test_lmdb_batch(starting_coin_id, test_image_ids,images_per_angle):
+    # I am going to start by 10 then move to 100
+    filedata = []
+    lmdb_dir = test_dir + str(starting_coin_id) + '/'
+    if not os.path.exists(lmdb_dir):
+        os.makedirs(lmdb_dir)
+
+    for file_number in test_image_ids:
+        filedata.append([file_number, get_filename_from(file_number), 0])
+
+    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, False, False)
+
+    shell_filenames = []
+    seed_image_ids = get_seed_image_ids()
+
+    for image_id in seed_image_ids:
+        shell_filenames.append(create_test_script(image_id,starting_coin_id))
+    create_script_calling_script(test_dir + 'test_all.sh', shell_filenames)
+
 
 # *****************************************************************************
 # normal use:
@@ -665,6 +656,9 @@ def get_normal_angle(angle):
 
 # Multi-Point Works awesome ************************************************************************************
 init_dir()
+
+create_test_batch(0)
+
 test_image_ids = []
 new_test_image_ids = []
 new_seed_image_ids = []
@@ -710,18 +704,6 @@ for seed_image_id in seed_image_ids:
 
 run_scripts(scripts_to_run,max_workers=2)
 read_test(seed_image_ids, 360)
-#
-# # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
-# image_set.read_results(0, data_dir, seeds_share_test_images=False)
-# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-# print 'The following test_image_ids where taking out of the image:'
-# print multi_point_error_test_image_ids
-# print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
-# image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
-# #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
-
-#print 'Done in %s seconds' % (time.time() - start_time,)
-#sys.exit("End")
 
 # ********
 # Step 2:
@@ -738,30 +720,16 @@ read_test(seed_image_ids, 360)
 #     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 # read_test(seed_image_ids, 360)
 
-# ********
-# Step 3:
-#Check out all test image results
-#create_seed_and_test_random(0,14500)
-#create_all_test_lmdbs(3)
-# create_test_lmdbs(0)
-# for seed_image_id in seed_image_ids:
-#     for test_id in range(0, 6):
-#         create_test_script(seed_image_id, test_id, True)
-#         script_filename = test_dir + str(test_id) + '/test-' + str(seed_image_id) + '.sh'
-#         scripts_to_run.append(script_filename)
-# run_scripts(scripts_to_run,max_workers=2)
-# read_test(seed_image_ids, 360)
 
-# image_set.read_results(10, data_dir, seeds_share_test_images=True)
+
+# # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
+# image_set.read_results(0, data_dir, seeds_share_test_images=False)
 # multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
 # print 'The following test_image_ids where taking out of the image:'
 # print multi_point_error_test_image_ids
 # print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
-#
-# image_set.create_composite_images(crop_dir, data_dir_dir, 140, 40, 10, None, multi_point_error_test_image_ids)
-# image_set.create_composite_image(crop_dir, data_dir, 140, 40, 10, multi_point_error_test_image_ids)
-# print 'Done in %s seconds' % (time.time() - start_time,)
-
+# image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+# #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
 #Dates  ************************************************************************************
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
