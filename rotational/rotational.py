@@ -14,6 +14,7 @@ import sys
 import time
 from itertools import islice
 from subprocess import Popen
+from multiprocessing import Pool
 
 import create_lmdb_rotate_whole_image
 import image_set
@@ -272,7 +273,7 @@ def create_single_lmdbs(seed_image_ids):
         print 'Creating single lmdb for ' + str(image_id)
         filedata = [[image_id, crop_dir + str(image_id) + '.png', 0]]
         lmdb_dir = train_dir + str(image_id) + '/'
-        create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 100, -1, True, False)
+        create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, 100, True, False)
         copy_train_files(lmdb_dir)
         shell_filename = create_train_script(lmdb_dir, train_dir + weight_filename, False)
         shell_filenames.append(shell_filename)
@@ -293,7 +294,7 @@ def create_single_lmdb(seed_image_id, filedata, test_id, multi_image_training=Fa
 
     lmdb_dir = train_dir + str(seed_image_id) + '/'
 
-    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, -1, True, False)
+    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, True, False)
     copy_train_files(lmdb_dir, multi_image_training)
     create_train_script(lmdb_dir, train_dir + weight_filename, multi_image_training)
     print 'Done in %s seconds' % (time.time() - start_time,)
@@ -412,6 +413,9 @@ def run_scripts(filenames, max_workers):
     # This results in a 3.14x speed up using 6 workers to classify because the classification tool is CPU heavy
     start_time = time.time()
     processes = (Popen(cmd, shell=True) for cmd in filenames)
+    run_processes(processes, max_workers)
+
+def run_processes(processes, max_workers):
     running_processes = list(islice(processes, max_workers))  # start new processes
     while running_processes:
         time.sleep(.001)  # Sleep for a ms so this loop does not waste CPU
@@ -421,8 +425,7 @@ def run_scripts(filenames, max_workers):
                 if running_processes[i] is None:  # no new processes
                     del running_processes[i]
                     break
-    print 'All scripts run in %s seconds' % (time.time() - start_time,)
-
+    print 'All processes run in %s seconds' % (time.time() - start_time,)
 
 def create_new_indexes(total_new_seed_imgs, total_new_test_imgs):
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
@@ -472,7 +475,6 @@ def retrain_widened_seed(seed_image_id, cut_off):
 
 
 # Manually run and edit functions below:   ****************************************
-
 def build_init_rotational_networks():
     # This function is meant to be edited and run manually for now.
     # This starts from scratch: Only square images need to exist in the crop dir
@@ -607,65 +609,51 @@ def get_normal_angle(angle):
     if angle >= 360:
         return angle - 360
 
-def create_test_lmdb_batch(starting_coin_id, test_image_ids,images_per_angle):
-    # I am going to start by 10 then move to 100
-    filedata = []
-    lmdb_dir = test_dir + str(starting_coin_id) + '/'
-    if not os.path.exists(lmdb_dir):
-        os.makedirs(lmdb_dir)
+def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
+    start_time = time.time()
+    print 'Starting create_test_lmdb_batches'
+    #Create test lmdbs by 10 coin_ids  (10 x 57 = 570 images)
+    test_batch_filedata = {}
 
-    for file_number in test_image_ids:
-        filedata.append([file_number, get_filename_from(file_number), 0])
-
-    create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, False, False)
+    for test_image_id in test_image_ids:
+        if test_image_id > 15999:
+            continue
+        test_batch_id = test_image_id / 1000
+        if test_batch_id not in test_batch_filedata.iterkeys():
+            test_batch_filedata[test_batch_id] = []
+            lmdb_dir = test_dir + str(test_batch_id) + '/'
+            if not os.path.exists(lmdb_dir):
+                os.makedirs(lmdb_dir)
+        test_batch_filedata[test_batch_id].append([test_image_id, get_filename_from(test_image_id), 0])
 
     shell_filenames = []
-    seed_image_ids = get_seed_image_ids()
+    calling_args = []
+    for test_batch_id,filedata in test_batch_filedata.iteritems():
+        lmdb_dir = test_dir + str(test_batch_id) + '/'
+        calling_args.append([filedata, lmdb_dir, images_per_angle])
+        #create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, False, False)
+        for image_id in seed_image_ids:
+            shell_filenames.append(create_test_script(image_id,test_batch_id))
 
-    for image_id in seed_image_ids:
-        shell_filenames.append(create_test_script(image_id,starting_coin_id))
     create_script_calling_script(test_dir + 'test_all.sh', shell_filenames)
 
+    pool = Pool(1)
+    pool.map(create_lmdb_rotate_whole_image.create_all_lmdbs, calling_args)
+    pool.close()
+    pool.join()
+    print 'create_test_lmdb_batches', 'Done after %s seconds' % (time.time() - start_time,)
 
-# *****************************************************************************
-# normal use:
-# build_init_rotational_networks()
-#read_all_results(17,seed_image_ids=None, seeds_share_test_images=False, remove_widened_seeds=False)
-
-# 416,137,259,178,265
-# image_set.read_results(10, data_dir, seeds_share_test_images=True, remove_widened_seeds=True)
-# image_set.create_composite_images(crop_dir, date_dir, 140, 10, 10)
-# link_seed_by_graph(178, 10, min_connections=8, max_depth=18)
-# link_seed_by_graph(416, 10, min_connections=5, max_depth=18)
-#read_all_results(10, seeds_share_test_images=True, remove_widened_seeds=False)
-
-
-# *****************************************************************************
-# Widening function. Link Widening might be better overall.
-# Pick top seed with the most image results over 20 and highest of those results:
-# widen_model(9813,5,23)
-# create_all_test_lmdbs()
-# Shrink the results to the widened seeds:
-# read_all_results(0,[11458,12004])
-# create_all_test_lmdbs()  #Raise the number of test images
-# test_all(seed_image_ids)
-# Check out the test set results and choose the number of seeds(60) and training images(1000).
-# Test on new test set and make 30 new seeds low performers of each set.
-# Create test sets from the 500 lowest performers of each set.
-# create_new_indexes(30, 500)
 
 # Multi-Point Works awesome ************************************************************************************
-init_dir()
-
-create_test_batch(0)
-
+#init_dir()
+start_time = time.time()
 test_image_ids = []
 new_test_image_ids = []
 new_seed_image_ids = []
 count = 0
 seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
 for coin_id in seed_image_ids:
-    if (count < 16) and (coin_id % 2 == 0):
+    if (count < 500) and (coin_id % 2 == 0):
         new_seed_image_ids.append(coin_id * 100)
         new_seed_image_ids.append((coin_id +3) * 100)
         for image_id in range(0,57):
@@ -673,12 +661,12 @@ for coin_id in seed_image_ids:
             new_test_image_ids.append((coin_id +3) * 100 + image_id)
         count += 2
 test_image_ids = sorted(new_test_image_ids)
+
 #seed_image_ids = sorted(new_seed_image_ids)
 #pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
 pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 #save_multi_point_ids()
 
-start_time = time.time()
 seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
 seed_image_ids = (200,1100)
 scripts_to_run = []
@@ -686,7 +674,8 @@ images_per_angle = 200
 #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 #test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 
-create_test_lmdbs(0,1)
+create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+sys.exit()
 
 for seed_image_id in seed_image_ids:
     filedata = []
@@ -696,6 +685,7 @@ for seed_image_id in seed_image_ids:
         filename = get_filename_from(test_image_id)
         filedata.append([test_image_id, filename, 0])
     # # the test_id = 5 just adds more data for now:
+
     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
     create_test_script(seed_image_id, 0, True)

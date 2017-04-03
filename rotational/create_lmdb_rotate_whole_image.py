@@ -13,8 +13,13 @@ import caffe_image as ci
 import caffe_lmdb
 
 
-def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=True, create_files=False):
+def create_all_lmdbs(args):
+    filedata, lmdb_dir, images_per_angle = args
+    create_lmdbs (filedata, lmdb_dir, images_per_angle,False)
+
+def create_lmdbs(filedata, lmdb_dir, images_per_angle, create_val_set=True, create_files=False):
     start_time = time.time()
+    print 'Creating lmdb for:' , lmdb_dir
     img_dir = '/home/pkrush/img-files'
     max_images = 99999999
     crop_size = 28
@@ -162,7 +167,7 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
             loop_time = time.time()
             caffe_lmdb.write_batch_to_lmdb(train_image_db, train_image_batch)
             caffe_lmdb.write_batch_to_lmdb(val_image_db, val_image_batch)
-            print 'Write batch after %s micro seconds' % ((time.time() - loop_time)*1000000,)
+            #print 'Write batch after %s micro seconds' % ((time.time() - loop_time)*1000000,)
             train_image_batch = []
             val_image_batch = []
 
@@ -180,6 +185,6 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, test_id, create_val_set=T
     # save mean
     mean_image = (image_sum / (id + 1) * images_per_angle * 360).astype('uint8')
     ci.save_mean(mean_image, os.path.join(lmdb_dir, 'mean.binaryproto'))
-    print 'Done after %s seconds' % (time.time() - start_time,)
+    print lmdb_dir, 'Done after %s seconds' % (time.time() - start_time,)
 
     return
