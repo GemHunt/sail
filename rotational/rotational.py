@@ -669,6 +669,7 @@ for test_image_id in test_image_ids:
         test_batch_ids.append(test_batch_id)
 
 for seed_image_id in seed_image_ids:
+    pass
     # filedata = []
     # seed_images = seed_image_data[int(seed_image_id / 100)]
     # for image_id in seed_images:
@@ -677,12 +678,18 @@ for seed_image_id in seed_image_ids:
     #     filedata.append([test_image_id, filename, 0])
     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    for test_batch_id in test_batch_ids:
-        create_test_script(seed_image_id,test_batch_id,True)
-        scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
-
-run_scripts(scripts_to_run,max_workers=4)
-read_test(seed_image_ids,test_batch_ids)
+#     for test_batch_id in test_batch_ids:
+#         filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
+#         if os.path.isfile(filename):
+#             file_size = os.path.getsize(filename)
+#             if file_size > 0:
+#                 print 'Exists:', filename
+#                 continue
+#         create_test_script(seed_image_id,test_batch_id,True)
+#         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
+#
+# run_scripts(scripts_to_run,max_workers=6)
+read_test(test_batch_ids,seed_image_ids)
 
 # ********
 # Step 2:
