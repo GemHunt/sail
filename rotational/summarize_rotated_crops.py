@@ -3,7 +3,7 @@ import time
 import pandas as pd
 
 
-def get_results(filename, seed_image_id, low_angle, high_angle):
+def get_results(filename, seed_image_id):
     pd.set_option('display.max_rows', 10000)
     start_time = time.time()
 
@@ -28,8 +28,7 @@ def get_results(filename, seed_image_id, low_angle, high_angle):
         top_result_index = image_results['result'].idxmax()
         angle = image_results.ix[top_result_index]['prediction']
         max_value = image_results.ix[top_result_index]['result']
-        if (angle < low_angle) or (angle > high_angle):
-            filtered_results.append([seed_image_id, image_id, int(angle), max_value])
+        filtered_results.append([seed_image_id, image_id, int(angle), max_value])
 
     print 'Done reading results, with slow python, for seed image ID:' + str(seed_image_id) + ' in %s seconds' % (
         time.time() - start_time)

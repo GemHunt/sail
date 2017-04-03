@@ -334,7 +334,7 @@ def create_script_calling_script(filename, shell_filenames):
     create_shell_script(filename, shell_script)
 
 
-def read_test(image_ids, max_test_id):
+def read_test(test_batch_ids,image_ids):
     all_results_filename = data_dir + 'all_results.pickle'
     all_results = []
     new_all_results = []
@@ -351,25 +351,13 @@ def read_test(image_ids, max_test_id):
             if results[0] != image_ids[0]:
                 new_all_results.append(results)
 
-    if max_test_id == 360:
-        # all results are in test 0
-        max_test_id = 0
-        low_angle = 180
-        high_angle = 180
-    else:
-        low_angle, high_angle = test_angles[max_test_id]
-
-    # For Dates
-    # low_angle = 10
-    #high_angle = 350
-
-    for test_id in range(0, max_test_id + 1):
+    for test_batch_id in test_batch_ids:
         for image_id in image_ids:
-            filename = test_dir + str(test_id) + '/' + str(image_id) + '.dat'
+            filename = test_dir + str(test_batch_id) + '/' + str(image_id) + '.dat'
 
             if not os.path.isfile(filename):
                 continue
-            results = summarize_rotated_crops.get_results(filename, image_id, low_angle, high_angle)
+            results = summarize_rotated_crops.get_results(filename, image_id)
             # results = summarize_whole_rotated_model_results.summarize_whole_rotated_model_results(
             #                                                                  filename, image_id,low_angle,high_angle)
             new_all_results.append(results)
@@ -610,14 +598,13 @@ def get_normal_angle(angle):
         return angle - 360
 
 def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
+    #todo:This needs to create the lmdbs files in order
     start_time = time.time()
     print 'Starting create_test_lmdb_batches'
     #Create test lmdbs by 10 coin_ids  (10 x 57 = 570 images)
     test_batch_filedata = {}
 
     for test_image_id in test_image_ids:
-        if test_image_id > 15999:
-            continue
         test_batch_id = test_image_id / 1000
         if test_batch_id not in test_batch_filedata.iterkeys():
             test_batch_filedata[test_batch_id] = []
@@ -637,7 +624,7 @@ def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
 
     create_script_calling_script(test_dir + 'test_all.sh', shell_filenames)
 
-    pool = Pool(1)
+    pool = Pool(8)
     pool.map(create_lmdb_rotate_whole_image.create_all_lmdbs, calling_args)
     pool.close()
     pool.join()
@@ -645,7 +632,7 @@ def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
 
 
 # Multi-Point Works awesome ************************************************************************************
-#init_dir()
+init_dir()
 start_time = time.time()
 test_image_ids = []
 new_test_image_ids = []
@@ -653,7 +640,7 @@ new_seed_image_ids = []
 count = 0
 seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
 for coin_id in seed_image_ids:
-    if (count < 500) and (coin_id % 2 == 0):
+    if (count < 99999999) and (coin_id % 2 == 0):
         new_seed_image_ids.append(coin_id * 100)
         new_seed_image_ids.append((coin_id +3) * 100)
         for image_id in range(0,57):
@@ -674,26 +661,28 @@ images_per_angle = 200
 #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 #test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
 
-create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
-sys.exit()
+#create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+test_batch_ids = []
+for test_image_id in test_image_ids:
+    test_batch_id = test_image_id / 1000
+    if test_batch_id not in test_batch_ids:
+        test_batch_ids.append(test_batch_id)
 
 for seed_image_id in seed_image_ids:
-    filedata = []
-    seed_images = seed_image_data[int(seed_image_id / 100)]
-    for image_id in seed_images:
-        test_image_id = seed_image_id + image_id
-        filename = get_filename_from(test_image_id)
-        filedata.append([test_image_id, filename, 0])
-    # # the test_id = 5 just adds more data for now:
-
+    # filedata = []
+    # seed_images = seed_image_data[int(seed_image_id / 100)]
+    # for image_id in seed_images:
+    #     test_image_id = seed_image_id + image_id
+    #     filename = get_filename_from(test_image_id)
+    #     filedata.append([test_image_id, filename, 0])
     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-    create_test_script(seed_image_id, 0, True)
-    scripts_to_run.append(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-    #run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+    for test_batch_id in test_batch_ids:
+        create_test_script(seed_image_id,test_batch_id,True)
+        scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
 
-run_scripts(scripts_to_run,max_workers=2)
-read_test(seed_image_ids, 360)
+run_scripts(scripts_to_run,max_workers=4)
+read_test(seed_image_ids,test_batch_ids)
 
 # ********
 # Step 2:
@@ -721,7 +710,7 @@ read_test(seed_image_ids, 360)
 # image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 # #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
 #Dates  ************************************************************************************
-image_set.read_results(0, data_dir, seeds_share_test_images=False)
+image_set.read_results(test_batch_ids, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
 # Create a composite image for dates:
 image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)
