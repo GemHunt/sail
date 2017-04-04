@@ -21,7 +21,7 @@ import image_set
 import summarize_rotated_crops
 
 home_dir = '/home/pkrush/cent-models/'
-crop_dir = '/home/pkrush/cents-test/'
+crop_dir = '/home/pkrush/data/cents-test/'
 
 # For Dates:
 # home_dir = '/home/pkrush/cent-date-models/'
@@ -335,6 +335,8 @@ def create_script_calling_script(filename, shell_filenames):
 
 
 def read_test(test_batch_ids,image_ids):
+    #todo This needs to be way quicker at reading these files
+    #todo This needs to be multi-threaded
     all_results_filename = data_dir + 'all_results.pickle'
     all_results = []
     new_all_results = []
@@ -354,7 +356,7 @@ def read_test(test_batch_ids,image_ids):
     for test_batch_id in test_batch_ids:
         for image_id in image_ids:
             filename = test_dir + str(test_batch_id) + '/' + str(image_id) + '.dat'
-
+            print 'Reading: ', filename
             if not os.path.isfile(filename):
                 continue
             results = summarize_rotated_crops.get_results(filename, image_id)
@@ -502,7 +504,8 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
+def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
+    #def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
     # Find all test_image_ids that the angle is off where the major class is correct
@@ -689,7 +692,7 @@ for seed_image_id in seed_image_ids:
 #         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
 #
 # run_scripts(scripts_to_run,max_workers=6)
-read_test(test_batch_ids,seed_image_ids)
+#read_test(test_batch_ids,seed_image_ids)
 
 # ********
 # Step 2:
@@ -717,7 +720,8 @@ read_test(test_batch_ids,seed_image_ids)
 # image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 # #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
 #Dates  ************************************************************************************
-image_set.read_results(test_batch_ids, data_dir, seeds_share_test_images=False)
+image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
 # Create a composite image for dates:
+image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)

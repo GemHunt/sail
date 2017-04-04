@@ -518,7 +518,8 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
         crop = cv2.imread(filename)
 
         if crop == None:
-            pass
+            print 'None?:', filename
+            continue
 
         center_x = image_size / 2 + math.cos(math.radians(heads_date_angle + coin_angle)) * date_center_offset
         center_y = image_size / 2 - math.sin(math.radians(heads_date_angle + coin_angle)) * date_center_offset
