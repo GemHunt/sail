@@ -23,7 +23,7 @@ remove_results_of_these_seeds = []
 
 
 def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images=True, remove_widened_seeds=False,
-                 bad_coin_ids=None, ground_truth=None):
+                 bad_coin_ids=None, ground_truth=None, remove_coin_ids=None):
     all_results = pickle.load(open(data_dir + 'all_results.pickle', "rb"))
     # columns = ['seed_image_id', 'image_id', 'angle', 'max_value']
     image_ids_with_highest_max_value = {}
@@ -66,7 +66,11 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
                 if [seed_coin_id, image_coin_id] in bad_coin_ids:
                     continue
 
-            # Model Balancing:
+            if remove_coin_ids is not None:
+                if image_coin_id in remove_coin_ids:
+                    continue
+
+                            # Model Balancing:
             # Some models are more confident than others
             # So balancing models will help them score better.
 
@@ -413,8 +417,8 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
         for image_id, max_value, angle in sorted_results:
             crop = ci.get_rotated_crop(crop_dir, image_id, crop_size, angle)
             font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(crop, str(max_value)[0:5], (10, 20), font, .7, (0, 255, 0), 2)
-            cv2.putText(crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(max_value)[0:5], (4, 20), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(image_id)[0:6], (4, 90), font, .7, (0, 255, 0), 2)
             images.append(crop)
         calc_rows = int(len(images) / cols) + 1
         composite_image = ci.get_composite_image(images, calc_rows, cols)
@@ -587,4 +591,22 @@ def save_widened_seeds(data_dir, seed_image_id,cut_off):
     print 'test_images_saved: ' , len(widened_seeds)
 
     pickle.dump(widened_seeds, open(data_dir + str(seed_image_id) + '.pickle', "wb"))
+
+def save_good_coin_ids(data_dir, seed_image_id,cut_off,remove_image_ids):
+    #todo save_good_test_ids is not correct this needs a database:
+    good_coin_ids = {}
+    filename = data_dir + 'good_coin_ids.pickle'
+    if os.path.exists(filename):
+        #good_coin_ids = set(pickle.load(open(filename, "rb")))
+        pass
+
+    values = results_dict[seed_image_id].iteritems()
+    for test_image_id, test_values in values:
+        max_value, angle = test_values
+        coin_id = test_image_id/100
+        if max_value > cut_off:
+            good_coin_ids.add(test_image_id)
+        good_coin_ids.difference_update(remove_image_ids)
+    print 'good_test_ids len: ' , len(good_coin_ids)
+    pickle.dump(good_coin_ids, open(filename, "wb"))
 

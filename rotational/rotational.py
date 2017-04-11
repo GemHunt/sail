@@ -504,7 +504,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
+def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     #def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
@@ -515,8 +515,10 @@ def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     coin_results = {}
     error_test_image_ids = []
+    bad_coin_ids = set()
     all_error_test_image_ids = []
     average_coin_angles = {}
+    major_seed_ids = {}
 
     for seed_image_id, images in seeds.iteritems():
         for test_image_id, values in images.iteritems():
@@ -528,7 +530,6 @@ def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
 
     bad_angle_grand_total = 0
     bad_seed_grand_total = 0
-    bad_coin_id_grand_total = 0
 
     for coin_id, values in coin_results.iteritems():
         bad_angle_total = 0
@@ -542,7 +543,7 @@ def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
                 seed_image_id_counts[seed_image_id] = 0
             seed_image_id_counts[seed_image_id] += 1
 
-        major_seed_image_id = max(seed_image_id_counts.iteritems(), key=operator.itemgetter(1))[0]
+            major_seed_ids[coin_id] = max(seed_image_id_counts.iteritems(), key=operator.itemgetter(1))[0]
 
         correct_values = []
         angles = []
@@ -550,7 +551,7 @@ def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
             test_image_id = test_values[0]
             seed_image_id = test_values[1]
             test_angle = test_values[3]
-            if seed_image_id != major_seed_image_id:
+            if seed_image_id != major_seed_ids[coin_id]:
                 bad_seed_total += 1
                 bad_seed_grand_total +=1
                 error_test_image_ids.append(test_image_id)
@@ -581,16 +582,40 @@ def get_errors_and_angles(min_good_images_per_seed= 0, angle_tolerance=0):
             print 'Average Angle',  average_coin_angles[coin_id]
 
         if min_good_images_per_seed > good:
-            bad_coin_id_grand_total += 1
+            bad_coin_ids.add(coin_id)
+
+        print coin_id, len(values), 'Good:', good, 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
+
+    same_side_seed_count = 0
+
+    for coin_id in major_seed_ids:
+        if coin_id % 2 == 0:
+            if coin_id + 3 in major_seed_ids.iterkeys():
+                if major_seed_ids[coin_id] == major_seed_ids[coin_id +3]:
+                    same_side_seed_count += 1
+                    bad_coin_ids.add(coin_id)
+                    bad_coin_ids.add(coin_id + 3)
+                    print 'Same seed ids:',coin_id, major_seed_ids[coin_id], major_seed_ids[coin_id+3]
+    print 'same_seed_count:',same_side_seed_count
+
+    rotation_error_coin_ids = get_rotation_error_coin_ids(average_coin_angles)
+    print 'rotation_error count:', len(rotation_error_coin_ids)
+    for coin_id in rotation_error_coin_ids:
+        bad_coin_ids.add(coin_id)
+        bad_coin_ids.add(coin_id + 3)
+
+    for coin_id, values in coin_results.iteritems():
+        if coin_id in bad_coin_ids:
             for test_values in values:
                 test_image_id = test_values[0]
                 error_test_image_ids.append(test_image_id)
+            if coin_id in average_coin_angles.iterkeys():
+                del average_coin_angles[coin_id]
         all_error_test_image_ids.extend(error_test_image_ids)
 
-
-        print coin_id, len(values), 'Good:', good, 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
-    print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total, 'bad_coin_id_grand_total:' , bad_coin_id_grand_total
+    print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total, 'bad_coin_id_grand_total:' ,len(bad_coin_ids)
     return sorted(list(set(all_error_test_image_ids))), average_coin_angles
+
 
 def get_normal_angle(angle):
     if angle > 0 and angle < 360:
@@ -633,6 +658,32 @@ def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
     pool.join()
     print 'create_test_lmdb_batches', 'Done after %s seconds' % (time.time() - start_time,)
 
+def get_rotation_error_coin_ids(coin_angles):
+    rotation_error_coin_ids = []
+    rotation_differences = {}
+    for coin_id in range(0,5600,2):
+        if coin_id in coin_angles.iterkeys() and coin_id + 3 in coin_angles.iterkeys():
+            rotation_difference = get_normal_angle(coin_angles[coin_id] + coin_angles [coin_id +3])
+            rotation_differences[coin_id] = rotation_difference
+
+    #The histogram of rotation_differences should be a well defined gaussian.
+    #todo:average_rotation is hardcoded:  I need to find the peak automatically:
+    average_rotation = 220
+    rotation_tolerance = 40
+    low_angle_tolerance = get_normal_angle(average_rotation - rotation_tolerance)
+    high_angle_tolerance = get_normal_angle(average_rotation + rotation_tolerance)
+    if low_angle_tolerance > high_angle_tolerance:
+        #this can happen if low_angle_tolerance went under 0 to 330-359-ish
+        #this can also happen if high_angle_tolerance went over 360 to 0-29-ish
+        temp = low_angle_tolerance
+        low_angle_tolerance = high_angle_tolerance
+        high_angle_tolerance = temp
+
+    for coin_id,angle in rotation_differences.iteritems():
+        if not (low_angle_tolerance <= angle <= high_angle_tolerance):
+            rotation_error_coin_ids.append(coin_id)
+    return rotation_error_coin_ids
+
 
 # Multi-Point Works awesome ************************************************************************************
 init_dir()
@@ -650,7 +701,9 @@ for coin_id in seed_image_ids:
             new_test_image_ids.append(coin_id * 100 + image_id)
             new_test_image_ids.append((coin_id +3) * 100 + image_id)
         count += 2
+
 test_image_ids = sorted(new_test_image_ids)
+
 
 #seed_image_ids = sorted(new_seed_image_ids)
 #pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
@@ -709,8 +762,6 @@ for seed_image_id in seed_image_ids:
 #     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
 # read_test(seed_image_ids, 360)
 
-
-
 # # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
 # image_set.read_results(0, data_dir, seeds_share_test_images=False)
 # multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
@@ -720,8 +771,19 @@ for seed_image_id in seed_image_ids:
 # image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 # #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
 #Dates  ************************************************************************************
+# filename = data_dir + 'good_coin_ids.pickle'
+# if os.path.exists(filename):
+#     good_coin_ids = set(pickle.load(open(filename, "rb")))
+# image_set.read_results(0, data_dir, seeds_share_test_images=False,remove_coin_ids=good_coin_ids)
+
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
 multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
+
 # Create a composite image for dates:
-image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+#save_good_test_ids is not correct this needs a database:
+#image_set.save_good_test_ids(data_dir, 1100,0,multi_point_error_test_image_ids)
+#image_set.save_good_test_ids(data_dir, 200,31.4,multi_point_error_test_image_ids)
+
+#image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+#image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,[], True)
 image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)
