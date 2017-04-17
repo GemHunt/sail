@@ -370,6 +370,100 @@ def clean_dir(dir):
         os.makedirs(dir)
 
 
+def get_image_id(image_id,show_back):
+    if image_id < 300:
+        return  image_id
+    coin_id = image_id / 100
+    if show_back:
+        if coin_id % 2 == 0:
+            return image_id + 300
+        else:
+            return image_id - 300
+    else:
+        return image_id
+
+def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, rows, cols, coin_angles,ground_truth_designs,sort,show_marked,show_back):
+    html_dir = data_dir + 'html/'
+    clean_dir(html_dir)
+    results = results_dict
+    coin_id_seed_id = {}
+    images_by_seed = {}
+
+    for coin_id, values in ground_truth_designs.iteritems():
+        seed_image_id = values[0]
+        result = values[1]
+        marked = values[2]
+        if not show_marked and marked == 1:
+            continue
+        image_id = (coin_id * 100) + 54
+        if not seed_image_id in images_by_seed.iterkeys():
+            images_by_seed[seed_image_id] = []
+        angle = 0
+        if coin_id in coin_angles.iterkeys():
+            angle = coin_angles[coin_id]
+        images_by_seed[seed_image_id].append([image_id, result, angle])
+
+
+    for seed_image_id, values in images_by_seed.iteritems():
+        images = []
+        rotated_crop = ci.get_rotated_crop(crop_dir,  get_image_id(seed_image_id,show_back) , crop_size, 0)
+        if rotated_crop is None:
+            continue
+        images.append(rotated_crop)
+
+        sorted_results = sorted(values, key=lambda result: result[1], reverse=sort)
+        for image_id, max_value, angle in sorted_results:
+            crop = ci.get_rotated_crop(crop_dir, get_image_id(image_id,show_back), crop_size, angle)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(crop, str(max_value)[0:5], (4, 20), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(get_image_id(image_id,show_back)/100)[0:4], (4, 90), font, .7, (0, 255, 0), 2)
+            images.append(crop)
+        calc_rows = int(len(images) / cols) + 1
+        if rows >= calc_rows:
+            rows_to_pass = calc_rows
+        else:
+            rows_to_pass = rows
+        composite_image = ci.get_composite_image(images, rows, cols)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+    return
+
+
+
+def create_composite_image_total_result(crop_dir, data_dir, crop_size, rows, cols, coin_angles,total_coin_results):
+    html_dir = data_dir + 'html/'
+    clean_dir(html_dir)
+    results = results_dict
+    coin_id_seed_id = {}
+
+    for seed_image_id, seed_values in results.iteritems():
+        images = []
+        results = []
+        coin_results = {}
+        seed_coin_results = total_coin_results[seed_image_id]
+        for coin_id in seed_coin_results.iterkeys():
+            image_id = (coin_id * 100) + 54
+            if coin_id in seed_coin_results.iterkeys():
+                if coin_id in coin_angles.iterkeys():
+                    results.append([image_id, seed_coin_results[coin_id], coin_angles[coin_id]])
+
+        sorted_results = sorted(results, key=lambda result: result[1], reverse=True)
+        for image_id, max_value, angle in sorted_results:
+            crop = ci.get_rotated_crop(crop_dir, image_id, crop_size, angle)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(crop, str(max_value)[0:5], (4, 20), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(image_id)[0:6], (4, 90), font, .7, (0, 255, 0), 2)
+            images.append(crop)
+        calc_rows = int(len(images) / cols) + 1
+        if rows >= calc_rows:
+            rows_to_pass = calc_rows
+        else:
+            rows_to_pass = rows
+
+        composite_image = ci.get_composite_image(images, rows, cols)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+    return
+
+
 def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None,
                             use_only_best_coin_image=False):
     html_dir = data_dir + 'html/'
@@ -386,6 +480,8 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
 
     for seed_image_id, seed_values in results.iteritems():
         images = []
+
+        #Get the seed image first:
         rotated_crop = ci.get_rotated_crop(crop_dir, seed_image_id, crop_size, 0)
         if rotated_crop is None:
             continue
@@ -421,10 +517,17 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
             cv2.putText(crop, str(image_id)[0:6], (4, 90), font, .7, (0, 255, 0), 2)
             images.append(crop)
         calc_rows = int(len(images) / cols) + 1
-        composite_image = ci.get_composite_image(images, calc_rows, cols)
-        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
-    return
+        if rows >= calc_rows:
+            rows_to_pass = calc_rows
+        else:
+            rows_to_pass = rows
 
+        composite_image = ci.get_composite_image(images, rows, cols)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+
+
+    return
+    #todo ground_truth should be somewhere else:
     ground_truth_coin_ids = pickle.load(open(data_dir + 'ground_truth_coin_ids.pickle', "rb"))
     misclassify_count = 0
     seeds = []

@@ -35,7 +35,6 @@ def init_dir():
     directories = [home_dir, data_dir, crop_dir, train_dir, test_dir]
     make_dir(directories)
 
-
 def make_dir(directories):
     for path_name in directories:
         if not os.path.exists(path_name):
@@ -511,22 +510,28 @@ def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     # Find all test_image_ids that the angle is off where the major class is correct
     # Find the average good angles
 
-
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     coin_results = {}
     error_test_image_ids = []
     bad_coin_ids = set()
     all_error_test_image_ids = []
     average_coin_angles = {}
+    total_coin_results = {}
     major_seed_ids = {}
 
     for seed_image_id, images in seeds.iteritems():
+        if seed_image_id not in total_coin_results.iterkeys():
+            total_coin_results[seed_image_id] = {}
         for test_image_id, values in images.iteritems():
             max_value, angle = values
             coin_id = int(test_image_id / 100)
             if coin_id not in coin_results.iterkeys():
                 coin_results[coin_id] = []
             coin_results[coin_id].append([test_image_id, seed_image_id, max_value, angle])
+            if coin_id not in total_coin_results[seed_image_id].iterkeys():
+                total_coin_results[seed_image_id][coin_id] = 0
+            total_coin_results[seed_image_id][coin_id] += max_value
+
 
     bad_angle_grand_total = 0
     bad_seed_grand_total = 0
@@ -614,7 +619,7 @@ def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
         all_error_test_image_ids.extend(error_test_image_ids)
 
     print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total, 'bad_coin_id_grand_total:' ,len(bad_coin_ids)
-    return sorted(list(set(all_error_test_image_ids))), average_coin_angles
+    return sorted(list(set(all_error_test_image_ids))), average_coin_angles,total_coin_results
 
 
 def get_normal_angle(angle):
@@ -684,6 +689,74 @@ def get_rotation_error_coin_ids(coin_angles):
             rotation_error_coin_ids.append(coin_id)
     return rotation_error_coin_ids
 
+
+def get_ground_truth_designs(total_coin_results):
+    ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
+    # for seed_id, values in total_coin_results.iteritems():
+    #    for coin_id, result in values.iteritems():
+    #     if coin_id not in ground_truth_designs.iterkeys():
+    #         ground_truth_designs[coin_id] = [0,0,0]
+    #     if result > ground_truth_designs[coin_id][1]:
+    #         ground_truth_designs[coin_id] = [seed_id, result, 0]
+
+    # for coin_id, values in ground_truth_designs.iteritems():
+    #     seed_id = values[0]
+    #     result = values[1]
+    #     if  seed_id == 200 and result < 930:
+    #         ground_truth_designs[coin_id] = [4111, 0, 1]
+
+    for coin_id, values in ground_truth_designs.iteritems():
+        seed_id = values[0]
+        result = values[1]
+        #tails
+        markto = [2256,2250,317,565,647,751,1547,1572,1749,775,799,860,945,1223,1337,1355,1547,1572,1749,1794,1977,1985,
+                  2001,2025,2095,2119,2193,2110,2231,2335,2343,2359,2371,2387,425,3535,3545,3617,3695,2404,2461,2523,
+                  2563,3740,3780,3786,3815,3931,4227,4509,4515,4751,4755,4915,4961,4983,5003,5191,5259,2639,
+                  3128,3160,3697,3701,3817,2649,2846,2950,2963,2969,219]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [200, 0, 1]
+        if seed_id == 200 and result > 933:
+            ground_truth_designs[coin_id][2] = 1
+
+        #heads
+        markto = [1231,1982,2342,2412,2510,3007,3833, 2389,4149,3837,5,2806,1806,]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [1100, 0, 1]
+        if seed_id == 1100 and result > 146:
+            ground_truth_designs[coin_id][2] = 1
+        #shield
+        markto = [5326,4730,978,2504,1216,2790,4194,3302,5175,5134,1667,3536,5287,2403,2252,
+                  3810,2257,3784,4577,1810,3417,2879,5285,2415]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [4111, 0, 1]
+
+        #wheat
+        markto = [1715,3407,1940,2455,2471,3371,3626,3911,4542,4925,5292,4148,4601]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [1715, 0, 1]
+
+        #2009
+        markto = [3806,1864,3418,4878,5177,2160,4186,2724,3675,3879,3979,5037,2046,2462,2627,5035,]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [3806, 0, 1]
+
+        #maple
+        markto = [1803]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [1803, 0, 1]
+
+        #Canada_heads
+        markto = [1800]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [1800, 0, 1]
+
+        # Nothing
+        markto = [3005]
+        if coin_id in markto:
+            ground_truth_designs[coin_id] = [0, 0, 1]
+
+    pickle.dump(ground_truth_designs, open(data_dir + 'ground_truth_designs.pickle', "wb"))
+    return  ground_truth_designs
 
 # Multi-Point Works awesome ************************************************************************************
 init_dir()
@@ -777,13 +850,16 @@ for seed_image_id in seed_image_ids:
 # image_set.read_results(0, data_dir, seeds_share_test_images=False,remove_coin_ids=good_coin_ids)
 
 image_set.read_results(0, data_dir, seeds_share_test_images=False)
-multi_point_error_test_image_ids, coin_angles = get_errors_and_angles()
+multi_point_error_test_image_ids, coin_angles,total_coin_results = get_errors_and_angles()
+print total_coin_results
+
 
 # Create a composite image for dates:
 #save_good_test_ids is not correct this needs a database:
-#image_set.save_good_test_ids(data_dir, 1100,0,multi_point_error_test_image_ids)
-#image_set.save_good_test_ids(data_dir, 200,31.4,multi_point_error_test_image_ids)
+#image_set.save_good_test_ids(data_dir, 1100,0,multi_point_error_test_image_ids)#image_set.save_good_test_ids(data_dir, 200,31.4,multi_point_error_test_image_ids)
 
 #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
 #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,[], True)
-image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)
+ground_truth_designs = get_ground_truth_designs(total_coin_results)
+image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,False,True,True)
+#image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)
