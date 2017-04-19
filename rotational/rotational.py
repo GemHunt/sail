@@ -358,6 +358,38 @@ def read_test(test_batch_ids,image_ids):
     pickle.dump(new_all_results, open(data_dir + 'all_results.pickle', "wb"))
 
 
+def read_test(test_batch_ids,image_ids):
+    #todo This needs to be way quicker at reading these files
+    #todo This needs to be multi-threaded
+    all_results_filename = data_dir + 'all_results.pickle'
+    all_results = []
+    new_all_results = []
+    if os.path.exists(all_results_filename):
+        all_results = pickle.load(open(data_dir + 'all_results.pickle', "rb"))
+
+    # If only one image is being read remove the old image, else output all new results
+    if len(image_ids) == 1:
+        for results in all_results:
+            if len(results) == 0:
+                print('No test results, the network or test image was bad on ' + str(image_ids[0]) + '\n')
+                continue
+
+            if results[0] != image_ids[0]:
+                new_all_results.append(results)
+
+    for test_batch_id in test_batch_ids:
+        for image_id in image_ids:
+            filename = test_dir + str(test_batch_id) + '/' + str(image_id) + '.dat'
+            print 'Reading: ', filename
+            if not os.path.isfile(filename):
+                continue
+            results = summarize_rotated_crops.get_results(filename, image_id)
+            # results = summarize_whole_rotated_model_results.summarize_whole_rotated_model_results(
+            #                                                                  filename, image_id,low_angle,high_angle)
+            new_all_results.append(results)
+    pickle.dump(new_all_results, open(data_dir + 'all_results.pickle', "wb"))
+
+
 def widen_model(seed_image_id, max_test_id, max_value_cutoff):
     for test_id in range(0, max_test_id + 1):
         for x in range(0, 2):
@@ -849,10 +881,16 @@ def build_init_rotational_networks():
     #init_dir()
     images_per_angle = 400
     #save_multi_point_ids()
-    #[23900, 40500, 67700, 218800, 16500, 68300, 69300, 82200, 197100, 267100, 341500, 480400, 485200, 530200]
     #create_seed_ids_random(10000, -1)
     seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-    seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+    #This were random picked:
+    #seed_image_ids = sorted(set([23900, 40500, 67700, 218800, 16500, 68300, 69300, 82200, 197100, 267100, 341500, 480400, 485200, 530200]))
+    # This were hand picked:
+    seed_image_ids = sorted(set(
+        [358200,49500,94800,199800,8200,40800,55100,56200,369200,457800,91600,354000,207400,55200,113400,34500,431400,
+         55600,29200,364200,467100,432200,374400,287000,348200,269800,122400,175200,125600,512600,489000,450300,128700,
+         316200,152400,485100,456300,115600,211200,134500,177500,357200,520500,240700,286700,137500,339200]))
+    #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
     print seed_image_ids
     test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
 
@@ -871,24 +909,26 @@ def build_init_rotational_networks():
             test_image_id = seed_image_id + image_id
             filename = get_filename_from(test_image_id)
             filedata.append([test_image_id, filename, 0])
-        create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
-        run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-        for test_batch_id in test_batch_ids:
-            filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
-            if os.path.isfile(filename):
-                file_size = os.path.getsize(filename)
-                if file_size > 0:
-                    print 'Exists:', filename
-                    continue
-            create_test_script(seed_image_id,test_batch_id,True)
-            scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
-
-    run_scripts(scripts_to_run,max_workers=3)
-    read_test(test_batch_ids,seed_image_ids)
+        #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
+        #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    #     for test_batch_id in test_batch_ids:
+    #         filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
+    #         if os.path.isfile(filename):
+    #             file_size = os.path.getsize(filename)
+    #             if file_size > 0:
+    #                 print 'Exists:', filename
+    #                 continue
+    #         create_test_script(seed_image_id,test_batch_id,True)
+    #         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
+    #
+    #     run_scripts(scripts_to_run,max_workers=3)
+    #
+    # read_test(test_batch_ids,seed_image_ids)
+    #image_set.remove_angles_for_dates_in_all_results(data_dir)
     read_all_results(0, seeds_share_test_images=False, remove_widened_seeds=True)
     multi_point_error_test_image_ids, coin_angles, total_coin_results = get_errors_and_angles(True)
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,multi_point_error_test_image_ids,True)
     ground_truth_designs = get_ground_truth_designs(total_coin_results)
-    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,True,True,False,True)
+    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125,6,10,coin_angles,ground_truth_designs,True,True,False,True)
 
 build_init_rotational_networks()

@@ -46,6 +46,8 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
         for seed_image_id, image_id, angle, max_value in results:
             total_max_value += max_value
             count += 1
+        if count == 0:
+            continue
         average_max_value = total_max_value / count
         print seed_image_id, count, total_max_value, average_max_value
         average_max_values[seed_image_id] = average_max_value
@@ -156,6 +158,19 @@ def read_results(cut_off, data_dir, seed_image_ids=None, seeds_share_test_images
                 results_dict[seed_image_id][image_id] = [max_value, angle]
 
     pickle.dump(results_dict, open(data_dir + 'seed_data.pickle', "wb"))
+
+def remove_angles_for_dates_in_all_results(data_dir):
+    all_results = pickle.load(open(data_dir + 'all_results.pickle', "rb"))
+    # columns = ['seed_image_id', 'image_id', 'angle', 'max_value']
+
+    new_all_results = []
+    for results in all_results:
+        new_results = []
+        for seed_image_id, image_id, angle, max_value in results:
+            if not (15 < angle < 345):
+                new_results.append([seed_image_id, image_id, angle, max_value])
+        new_all_results.append(new_results)
+    pickle.dump(new_all_results, open(data_dir + 'all_results.pickle', "wb"))
 
 
 def get_results_list(seed_id_filter=-1):
