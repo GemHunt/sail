@@ -382,7 +382,7 @@ def get_image_id(image_id,show_back):
     else:
         return image_id
 
-def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, rows, cols, coin_angles,ground_truth_designs,sort,show_marked,show_back):
+def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, rows, cols, coin_angles,ground_truth_designs,sort,show_marked,show_back,for_dates):
     html_dir = data_dir + 'html/'
     clean_dir(html_dir)
     results = results_dict
@@ -401,6 +401,8 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
         angle = 0
         if coin_id in coin_angles.iterkeys():
             angle = coin_angles[coin_id]
+        if for_dates and 10 < angle < 350:
+            continue
         images_by_seed[seed_image_id].append([image_id, result, angle])
 
 
@@ -500,8 +502,10 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
                     coin_results[coin_id].append([image_id, max_value, angle])
             for coin_id, values in coin_results.iteritems():
                 image_id, max_value, angle = max(values, key=lambda item: item[1])
-                results.append([image_id, max_value, angle])
-                coin_id_seed_id[coin_id] = [seed_image_id / 100, image_id, max_value, angle]
+                # for Dates:
+                if 10 > angle or 350 < angle:
+                    results.append([image_id, max_value, angle])
+                    coin_id_seed_id[coin_id] = [seed_image_id / 100, image_id, max_value, angle]
 
         else:
             for image_id, values in seed_values.iteritems():
@@ -579,7 +583,7 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
 # pickle.dump(coin_id_seed_id, open(data_dir + 'ground_truth_coin_ids.pickle', "wb"))
 
 
-def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, remove_image_ids,coin_angles):
+def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,coin_angles,only_show_one_image,save_files):
     #todo:OK how are heads_date_angle and date_center_offset releated?
     #I think this is only one angle.
 
@@ -607,14 +611,16 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
 
     for image_id, values in seed_values.iteritems():
         max_value, angle = values
-        if image_id not in remove_image_ids:
+        coin_id = image_id / 100
+        if coin_id in coin_angles:
             results.append([image_id, max_value, angle])
     sorted_results = sorted(results, key=lambda result: result[0], reverse=False)
 
     count = 0
     for image_id, max_value, angle in sorted_results:
-        if image_id  % 54 != 0:
-            continue
+        if only_show_one_image:
+            if image_id  % 54 != 0:
+                continue
         if count >= max_images:
             continue
         coin_id = image_id / 100
@@ -630,7 +636,7 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
 
         center_x = image_size / 2 + math.cos(math.radians(heads_date_angle + coin_angle)) * date_center_offset
         center_y = image_size / 2 - math.sin(math.radians(heads_date_angle + coin_angle)) * date_center_offset
-        print image_id, max_value, coin_angle, center_x, center_y
+        #print image_id, max_value, coin_angle, center_x, center_y
         date_crop = crop[center_x - crop_radius:center_x + crop_radius, center_y - crop_radius:center_y + crop_radius]
         rotated_date_crop = ci.rotate(date_crop, coin_angle - seed_id_100_angle, crop_radius, crop_radius, crop_radius * 2,
                                       crop_radius * 2)
@@ -643,13 +649,20 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images, r
             rotated_date_crop = cv2.resize(rotated_date_crop, (crop_radius * 2, crop_radius * 2),
                                            interpolation=cv2.INTER_AREA)
 
-        #cv2.imwrite('/home/pkrush/cent-dates/' + str(image_id) + '.png',rotated_date_crop)
-        images.append(rotated_date_crop)
+        if save_files:
+            dir = '/home/pkrush/cent-dates/' + str(coin_id/100)+'/'
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            cv2.imwrite(dir + str(image_id).zfill(7)  + '.png',rotated_date_crop)
+        else:
+            images.append(rotated_date_crop)
         count += 1
 
-    calc_rows = int(len(images) / 10) + 1
-    composite_image = ci.get_composite_image(images, calc_rows, 20)
-    cv2.imwrite(html_dir + 'dates.png', composite_image)
+    if not save_files:
+        calc_rows = int(len(images) / 10) + 1
+        composite_image = ci.get_composite_image(images, calc_rows, 20)
+        cv2.imwrite(html_dir + 'dates.png', composite_image)
+
     print count, 'Date images written'
 
 

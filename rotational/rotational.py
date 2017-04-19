@@ -20,12 +20,12 @@ import create_lmdb_rotate_whole_image
 import image_set
 import summarize_rotated_crops
 
-home_dir = '/home/pkrush/cent-models/'
-crop_dir = '/home/pkrush/data/cents-test/'
+#home_dir = '/home/pkrush/cent-models/'
+#crop_dir = '/home/pkrush/data/cents-test/'
 
 # For Dates:
-# home_dir = '/home/pkrush/cent-date-models/'
-# crop_dir = '/home/pkrush/cent-dates/'
+home_dir = '/home/pkrush/cent-date-models/'
+crop_dir = '/home/pkrush/cent-dates/'
 
 data_dir = home_dir + 'metadata/'
 train_dir = home_dir + 'train/'
@@ -47,30 +47,21 @@ def create_new_index(count, total_images, index_name):
     #seed_image_ids = [0, 100]
     pickle.dump(seed_image_ids, open(data_dir + index_name + '.pickle', "wb"))
 
-def create_seed_and_test_random(factor, start_id):
+def create_seed_ids_random(factor, start_id):
     # Only use 1/factor of the crop images
     # for example there are 10000 crops and a factor of 100
     #then only 100 of them would be the random seed and test images.
     # A factor of 0 would be 100%
     # This should be changed to percent!
-    crops = []
+    test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
     image_ids = []
-    for filename in glob.iglob(crop_dir + '*.png'):
-        crops.append(filename)
-
-    for filename in crops:
-        renamed = filename.replace("_", "")
-        image_id = int(renamed.replace('.png', '').replace('/home/pkrush/cents/', ''))
-        if image_id < start_id:
+    for test_image_id in test_image_ids:
+        if test_image_id < start_id:
             continue
-        renamed = crop_dir + str(image_id) + '.png'
-        os.rename(filename, renamed)
         rand_int = random.randint(0, factor)
         if rand_int == 0:
-            image_ids.append(image_id)
-    pickle.dump(image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-    pickle.dump(image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
-
+            image_ids.append((test_image_id/100)*100)
+    pickle.dump(sorted(set(image_ids)), open(data_dir + 'seed_image_ids.pickle', "wb"))
 
 def create_test_ids_from_multi_point(size_limit=-1):
     save_multi_point_ids()
@@ -131,17 +122,19 @@ def rename_crops():
 
 def save_multi_point_ids():
     multi_point_ids = {}
+    test_image_ids = []
     for root, dirnames, filenames in os.walk(crop_dir):
         for filename in filenames:
             if filename.endswith('.png'):
                 file_number = int(filename.replace('.png', ''))
+                test_image_ids.append(file_number)
                 coin_id = int(file_number / 100)
                 image_id = file_number % 100
                 if coin_id not in multi_point_ids.iterkeys():
                     multi_point_ids[coin_id] = []
                 multi_point_ids[coin_id].append(image_id)
     pickle.dump(multi_point_ids, open(data_dir + 'multi_point_ids.pickle', "wb"))
-
+    pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
 
 def rename_multi_point_crops():
     crops = []
@@ -414,7 +407,7 @@ def run_processes(processes, max_workers):
                 if running_processes[i] is None:  # no new processes
                     del running_processes[i]
                     break
-    print 'All processes run in %s seconds' % (time.time() - start_time,)
+    #print 'All processes run in %s seconds' % (time.time() - start_time,)
 
 def create_new_indexes(total_new_seed_imgs, total_new_test_imgs):
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
@@ -462,25 +455,6 @@ def retrain_widened_seed(seed_image_id, cut_off):
     read_all_results(max_value_cutoff, seeds_share_test_images=False, remove_widened_seeds=True)
     image_set.create_composite_images(crop_dir, data_dir, crop_size=140, rows=50, cols=10)
 
-
-# Manually run and edit functions below:   ****************************************
-def build_init_rotational_networks():
-    # This function is meant to be edited and run manually for now.
-    # This starts from scratch: Only square images need to exist in the crop dir
-    # init_dir()
-    #create_new_index(20, 13926, 'seed_image_ids')
-    #create_new_index(500, 13926, 'test_image_ids')
-    # create_seed_and_test_random(25)
-    # seeds = get_seed_image_ids()
-    #create_single_lmdbs(seeds)
-    create_test_lmdbs(0)
-    # create_all_test_lmdbs()
-    #run_script(train_dir + 'train_all.sh')
-    run_script(test_dir + 'test_all.sh')
-    read_test(get_seed_image_ids(), 0)
-    read_all_results(10, seeds_share_test_images=False, remove_widened_seeds=True)
-
-
 def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
     image_set.read_results(cut_off, data_dir, seeds_share_test_images=False, remove_widened_seeds=True)
     image_set.save_widened_seeds(data_dir, seed_id, cut_off)
@@ -503,7 +477,7 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
+def get_errors_and_angles(for_dates, min_good_images_per_seed= 10, angle_tolerance=15):
     #def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
     # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
@@ -530,8 +504,9 @@ def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
             coin_results[coin_id].append([test_image_id, seed_image_id, max_value, angle])
             if coin_id not in total_coin_results[seed_image_id].iterkeys():
                 total_coin_results[seed_image_id][coin_id] = 0
+            if for_dates and 10 < angle < 350:
+                continue
             total_coin_results[seed_image_id][coin_id] += max_value
-
 
     bad_angle_grand_total = 0
     bad_seed_grand_total = 0
@@ -591,17 +566,17 @@ def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
 
         print coin_id, len(values), 'Good:', good, 'Bad Angle:', bad_angle_total, 'Bad Seed:', bad_seed_total
 
-    same_side_seed_count = 0
-
-    for coin_id in major_seed_ids:
-        if coin_id % 2 == 0:
-            if coin_id + 3 in major_seed_ids.iterkeys():
-                if major_seed_ids[coin_id] == major_seed_ids[coin_id +3]:
-                    same_side_seed_count += 1
-                    bad_coin_ids.add(coin_id)
-                    bad_coin_ids.add(coin_id + 3)
-                    print 'Same seed ids:',coin_id, major_seed_ids[coin_id], major_seed_ids[coin_id+3]
-    print 'same_seed_count:',same_side_seed_count
+    if not for_dates:
+        same_side_seed_count = 0
+        for coin_id in major_seed_ids:
+            if coin_id % 2 == 0:
+                if coin_id + 3 in major_seed_ids.iterkeys():
+                    if major_seed_ids[coin_id] == major_seed_ids[coin_id +3]:
+                        same_side_seed_count += 1
+                        bad_coin_ids.add(coin_id)
+                        bad_coin_ids.add(coin_id + 3)
+                        print 'Same seed ids:',coin_id, major_seed_ids[coin_id], major_seed_ids[coin_id+3]
+        print 'same_seed_count:',same_side_seed_count
 
     rotation_error_coin_ids = get_rotation_error_coin_ids(average_coin_angles)
     print 'rotation_error count:', len(rotation_error_coin_ids)
@@ -689,15 +664,18 @@ def get_rotation_error_coin_ids(coin_angles):
             rotation_error_coin_ids.append(coin_id)
     return rotation_error_coin_ids
 
-
 def get_ground_truth_designs(total_coin_results):
-    ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
-    # for seed_id, values in total_coin_results.iteritems():
-    #    for coin_id, result in values.iteritems():
-    #     if coin_id not in ground_truth_designs.iterkeys():
-    #         ground_truth_designs[coin_id] = [0,0,0]
-    #     if result > ground_truth_designs[coin_id][1]:
-    #         ground_truth_designs[coin_id] = [seed_id, result, 0]
+    #ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
+    ground_truth_designs = {}
+    for seed_id, values in total_coin_results.iteritems():
+       for coin_id, result in values.iteritems():
+        if coin_id not in ground_truth_designs.iterkeys():
+            ground_truth_designs[coin_id] = [0,0,0]
+        if result > ground_truth_designs[coin_id][1]:
+            ground_truth_designs[coin_id] = [seed_id, result, 0]
+
+    return ground_truth_designs
+
 
     # for coin_id, values in ground_truth_designs.iteritems():
     #     seed_id = values[0]
@@ -708,7 +686,7 @@ def get_ground_truth_designs(total_coin_results):
     for coin_id, values in ground_truth_designs.iteritems():
         seed_id = values[0]
         result = values[1]
-        #tails
+        #Memorial
         markto = [2256,2250,317,565,647,751,1547,1572,1749,775,799,860,945,1223,1337,1355,1547,1572,1749,1794,1977,1985,
                   2001,2025,2095,2119,2193,2110,2231,2335,2343,2359,2371,2387,425,3535,3545,3617,3695,2404,2461,2523,
                   2563,3740,3780,3786,3815,3931,4227,4509,4515,4751,4755,4915,4961,4983,5003,5191,5259,2639,
@@ -718,148 +696,199 @@ def get_ground_truth_designs(total_coin_results):
         if seed_id == 200 and result > 933:
             ground_truth_designs[coin_id][2] = 1
 
-        #heads
+        #Heads
         markto = [1231,1982,2342,2412,2510,3007,3833, 2389,4149,3837,5,2806,1806,]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [1100, 0, 1]
         if seed_id == 1100 and result > 146:
             ground_truth_designs[coin_id][2] = 1
-        #shield
+        #Shield
         markto = [5326,4730,978,2504,1216,2790,4194,3302,5175,5134,1667,3536,5287,2403,2252,
                   3810,2257,3784,4577,1810,3417,2879,5285,2415]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [4111, 0, 1]
 
-        #wheat
+        #Wheat
         markto = [1715,3407,1940,2455,2471,3371,3626,3911,4542,4925,5292,4148,4601]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [1715, 0, 1]
 
-        #2009
+        #2009 Back
         markto = [3806,1864,3418,4878,5177,2160,4186,2724,3675,3879,3979,5037,2046,2462,2627,5035,]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [3806, 0, 1]
 
-        #maple
+        #Maple
         markto = [1803]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [1803, 0, 1]
 
-        #Canada_heads
+        #Canada Heads
         markto = [1800]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [1800, 0, 1]
 
-        # Nothing
+        #Missing
         markto = [3005]
         if coin_id in markto:
             ground_truth_designs[coin_id] = [0, 0, 1]
 
-    pickle.dump(ground_truth_designs, open(data_dir + 'ground_truth_designs.pickle', "wb"))
+    #pickle.dump(ground_truth_designs, open(data_dir + 'ground_truth_designs.pickle', "wb"))
     return  ground_truth_designs
 
-# Multi-Point Works awesome ************************************************************************************
-init_dir()
-start_time = time.time()
-test_image_ids = []
-new_test_image_ids = []
-new_seed_image_ids = []
-count = 0
-seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
-for coin_id in seed_image_ids:
-    if (count < 99999999) and (coin_id % 2 == 0):
-        new_seed_image_ids.append(coin_id * 100)
-        new_seed_image_ids.append((coin_id +3) * 100)
-        for image_id in range(0,57):
-            new_test_image_ids.append(coin_id * 100 + image_id)
-            new_test_image_ids.append((coin_id +3) * 100 + image_id)
-        count += 2
+# Manually run and edit functions below:   ****************************************
+def run_multi_point():
+    init_dir()
+    start_time = time.time()
+    test_image_ids = []
+    new_test_image_ids = []
+    new_seed_image_ids = []
+    count = 0
 
-test_image_ids = sorted(new_test_image_ids)
+    seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids_all.pickle', "rb"))
+    for coin_id in seed_image_ids:
+        if (count < 99999999) and (coin_id % 2 == 0):
+            new_seed_image_ids.append(coin_id * 100)
+            new_seed_image_ids.append((coin_id +3) * 100)
+            for image_id in range(0,57):
+                new_test_image_ids.append(coin_id * 100 + image_id)
+                new_test_image_ids.append((coin_id +3) * 100 + image_id)
+            count += 2
 
-
-#seed_image_ids = sorted(new_seed_image_ids)
-#pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
-pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
-#save_multi_point_ids()
-
-seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
-seed_image_ids = (200,1100)
-scripts_to_run = []
-images_per_angle = 200
-#seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-#test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
-
-#create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
-test_batch_ids = []
-for test_image_id in test_image_ids:
-    test_batch_id = test_image_id / 1000
-    if test_batch_id not in test_batch_ids:
-        test_batch_ids.append(test_batch_id)
-
-for seed_image_id in seed_image_ids:
-    pass
-    # filedata = []
-    # seed_images = seed_image_data[int(seed_image_id / 100)]
-    # for image_id in seed_images:
-    #     test_image_id = seed_image_id + image_id
-    #     filename = get_filename_from(test_image_id)
-    #     filedata.append([test_image_id, filename, 0])
-    #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
-    #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-#     for test_batch_id in test_batch_ids:
-#         filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
-#         if os.path.isfile(filename):
-#             file_size = os.path.getsize(filename)
-#             if file_size > 0:
-#                 print 'Exists:', filename
-#                 continue
-#         create_test_script(seed_image_id,test_batch_id,True)
-#         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
-#
-# run_scripts(scripts_to_run,max_workers=6)
-#read_test(test_batch_ids,seed_image_ids)
-
-# ********
-# Step 2:
-# Then widen the seed to include all crops in all results for each seed:
-# Check out the results in the png
-# Note the cutoff
-# This should be changed to include the step 3 double check
-
-# for seed_image_id in widen_seed_image_ids:
-#     cutoff = 13
-#     filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
-#     create_single_lmdb(seed_image_id, filedata, 0, True, 2800, retraining=True)
-#     run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
-#     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
-# read_test(seed_image_ids, 360)
-
-# # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
-# image_set.read_results(0, data_dir, seeds_share_test_images=False)
-# multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
-# print 'The following test_image_ids where taking out of the image:'
-# print multi_point_error_test_image_ids
-# print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
-# image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
-# #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
-#Dates  ************************************************************************************
-# filename = data_dir + 'good_coin_ids.pickle'
-# if os.path.exists(filename):
-#     good_coin_ids = set(pickle.load(open(filename, "rb")))
-# image_set.read_results(0, data_dir, seeds_share_test_images=False,remove_coin_ids=good_coin_ids)
-
-image_set.read_results(0, data_dir, seeds_share_test_images=False)
-multi_point_error_test_image_ids, coin_angles,total_coin_results = get_errors_and_angles()
-print total_coin_results
+    test_image_ids = sorted(new_test_image_ids)
 
 
-# Create a composite image for dates:
-#save_good_test_ids is not correct this needs a database:
-#image_set.save_good_test_ids(data_dir, 1100,0,multi_point_error_test_image_ids)#image_set.save_good_test_ids(data_dir, 200,31.4,multi_point_error_test_image_ids)
+    #seed_image_ids = sorted(new_seed_image_ids)
+    #pickle.dump(seed_image_ids, open(data_dir + 'seed_image_ids.pickle', "wb"))
+    pickle.dump(test_image_ids, open(data_dir + 'test_image_ids.pickle', "wb"))
+    #save_multi_point_ids()
 
-#image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
-#image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,[], True)
-ground_truth_designs = get_ground_truth_designs(total_coin_results)
-image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,False,True,True)
-#image_set.create_date_composite_image(crop_dir, data_dir, 1100, 2000, multi_point_error_test_image_ids,coin_angles)
+    seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+    seed_image_ids = (200,1100)
+    scripts_to_run = []
+    images_per_angle = 200
+    #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+    #test_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+
+    #create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+    test_batch_ids = []
+    for test_image_id in test_image_ids:
+        test_batch_id = test_image_id / 1000
+        if test_batch_id not in test_batch_ids:
+            test_batch_ids.append(test_batch_id)
+
+    for seed_image_id in seed_image_ids:
+        pass
+        # filedata = []
+        # seed_images = seed_image_data[int(seed_image_id / 100)]
+        # for image_id in seed_images:
+        #     test_image_id = seed_image_id + image_id
+        #     filename = get_filename_from(test_image_id)
+        #     filedata.append([test_image_id, filename, 0])
+        #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
+        #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    #     for test_batch_id in test_batch_ids:
+    #         filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
+    #         if os.path.isfile(filename):
+    #             file_size = os.path.getsize(filename)
+    #             if file_size > 0:
+    #                 print 'Exists:', filename
+    #                 continue
+    #         create_test_script(seed_image_id,test_batch_id,True)
+    #         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
+    #
+    # run_scripts(scripts_to_run,max_workers=6)
+    #read_test(test_batch_ids,seed_image_ids)
+
+    # ********
+    # Step 2:
+    # Then widen the seed to include all crops in all results for each seed:
+    # Check out the results in the png
+    # Note the cutoff
+    # This should be changed to include the step 3 double check
+
+    # for seed_image_id in widen_seed_image_ids:
+    #     cutoff = 13
+    #     filedata = get_single_lmdb_multi_point_filedata(seed_image_id, cutoff, multi_point_error_test_image_ids)
+    #     create_single_lmdb(seed_image_id, filedata, 0, True, 2800, retraining=True)
+    #     run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    #     run_script(test_dir + str(0) + '/test-' + str(seed_image_id) + '.sh')
+    # read_test(seed_image_ids, 360)
+
+    # # image_set.read_results(0, data_dir, seeds_share_test_images=False, bad_coin_ids=bad_coin_ids, ground_truth=ground_truth)
+    # image_set.read_results(0, data_dir, seeds_share_test_images=False)
+    # multi_point_error_test_image_ids = get_multi_point_error_test_image_ids()
+    # print 'The following test_image_ids where taking out of the image:'
+    # print multi_point_error_test_image_ids
+    # print 'multi_point_error_test_image_ids length:' + str(len(multi_point_error_test_image_ids))
+    # image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+    # #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10)
+    #Dates  ************************************************************************************
+    # filename = data_dir + 'good_coin_ids.pickle'
+    # if os.path.exists(filename):
+    #     good_coin_ids = set(pickle.load(open(filename, "rb")))
+    # image_set.read_results(0, data_dir, seeds_share_test_images=False,remove_coin_ids=good_coin_ids)
+
+    image_set.read_results(0, data_dir, seeds_share_test_images=False)
+    multi_point_error_test_image_ids, coin_angles,total_coin_results = get_errors_and_angles()
+    print total_coin_results
+
+    # Create a composite image for dates:
+    #save_good_test_ids is not correct this needs a database:
+    #image_set.save_good_test_ids(data_dir, 1100,0,multi_point_error_test_image_ids)#image_set.save_good_test_ids(data_dir, 200,31.4,multi_point_error_test_image_ids)
+
+    #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
+    #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,[], True)
+    #ground_truth_designs = get_ground_truth_designs(total_coin_results)
+    #image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,False,True,True)
+    image_set.create_date_composite_image(crop_dir, data_dir, 1100, 200000, coin_angles,False,True)
+
+def build_init_rotational_networks():
+    # This function is meant to be edited and run manually for now.
+    # This starts from scratch: Only square images need to exist in the crop dir
+    #init_dir()
+    images_per_angle = 400
+    #save_multi_point_ids()
+    #[23900, 40500, 67700, 218800, 16500, 68300, 69300, 82200, 197100, 267100, 341500, 480400, 485200, 530200]
+    #create_seed_ids_random(10000, -1)
+    seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
+    seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+    print seed_image_ids
+    test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
+
+    # create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+    test_batch_ids = []
+    scripts_to_run = []
+    for test_image_id in test_image_ids:
+        test_batch_id = test_image_id / 1000
+        if test_batch_id not in test_batch_ids:
+            test_batch_ids.append(test_batch_id)
+
+    for seed_image_id in seed_image_ids:
+        filedata = []
+        seed_images = seed_image_data[int(seed_image_id / 100)]
+        for image_id in seed_images:
+            test_image_id = seed_image_id + image_id
+            filename = get_filename_from(test_image_id)
+            filedata.append([test_image_id, filename, 0])
+        create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
+        run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+        for test_batch_id in test_batch_ids:
+            filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
+            if os.path.isfile(filename):
+                file_size = os.path.getsize(filename)
+                if file_size > 0:
+                    print 'Exists:', filename
+                    continue
+            create_test_script(seed_image_id,test_batch_id,True)
+            scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
+
+    run_scripts(scripts_to_run,max_workers=3)
+    read_test(test_batch_ids,seed_image_ids)
+    read_all_results(0, seeds_share_test_images=False, remove_widened_seeds=True)
+    multi_point_error_test_image_ids, coin_angles, total_coin_results = get_errors_and_angles(True)
+    #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,multi_point_error_test_image_ids,True)
+    ground_truth_designs = get_ground_truth_designs(total_coin_results)
+    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,True,True,False,True)
+
+build_init_rotational_networks()

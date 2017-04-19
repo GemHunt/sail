@@ -26,13 +26,12 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, create_val_set=True, crea
     before_rotate_size = 56
     classes = 360
     mask = None
-    radii = [28, 42, 64, 96, 146, 224]
-    #radii = [64, 96, 146, 224]
-    file_radius = 224
+    #radii = [28, 42, 64, 96, 146, 224]
+    #file_radius = 224
 
     # For Dates:
-    # radii = [28, 42, 56]
-    # file_radius = 56
+    radii = [28]
+    file_radius = 28
 
     if os.path.exists(lmdb_dir):
         shutil.rmtree(lmdb_dir)
@@ -112,6 +111,8 @@ def create_lmdbs(filedata, lmdb_dir, images_per_angle, create_val_set=True, crea
         # You have to more test images if this is the test set:
         number_of_angles *= len(crops)
     angles = ci.get_angle_sequence(number_of_angles, -1)
+    #For Dates: Run with the old testID of 0 to get -29 to 29 degrees:
+    #angles = ci.get_angle_sequence(number_of_angles, 0)
 
     print 'len(angles)',len(angles)
     for random_float, angle, class_angle in angles:

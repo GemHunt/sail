@@ -20,8 +20,10 @@ def get_filename_from(file_number,crop_dir):
 
 
 def get_whole_rotated_image(crop, mask, angle, crop_size, before_rotate_size, scale):
-    pixels_to_jitter = 35 * scale
-    # pixels_to_jitter = 1 #Old Way
+    #Better for larger:
+    #pixels_to_jitter = 35 * scale
+    #For Dates:
+    pixels_to_jitter = 4 #Old Way
 
     center_x = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
     center_y = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
