@@ -884,17 +884,24 @@ def build_init_rotational_networks():
     #create_seed_ids_random(10000, -1)
     seed_image_data = pickle.load(open(data_dir + 'multi_point_ids.pickle', "rb"))
     #This were random picked:
-    #seed_image_ids = sorted(set([23900, 40500, 67700, 218800, 16500, 68300, 69300, 82200, 197100, 267100, 341500, 480400, 485200, 530200]))
-    # This were hand picked:
-    seed_image_ids = sorted(set(
-        [358200,49500,94800,199800,8200,40800,55100,56200,369200,457800,91600,354000,207400,55200,113400,34500,431400,
-         55600,29200,364200,467100,432200,374400,287000,348200,269800,122400,175200,125600,512600,489000,450300,128700,
-         316200,152400,485100,456300,115600,211200,134500,177500,357200,520500,240700,286700,137500,339200]))
+    random_picked_seed_image_ids =set([23900, 40500, 67700, 218800, 16500, 68300, 69300, 82200, 197100, 267100, 341500, 480400, 485200, 530200])
+    # These were hand picked:
+    hand_picked_seed_image_ids = [8200, 29200, 34500, 40800, 49500, 55100, 55200, 55600, 56200, 91600, 94800, 113400, 115600, 122400,
+        128700,134500, 137500, 152400, 175200, 177500, 199800, 207400, 211200,
+        269800, 286700, 287000, 316200,
+        354000, 357200, 358200, 364200, 369200,
+        431400, 432200, 450300, 456300, 457800, 467100, 485100,
+        512600, 520500]
+    seed_image_ids = sorted(random_picked_seed_image_ids.union(hand_picked_seed_image_ids))
+
     #seed_image_ids = pickle.load(open(data_dir + 'seed_image_ids.pickle', "rb"))
+    print len(seed_image_ids)
     print seed_image_ids
+
     test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
 
     # create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+    #for count in range(0,30):
     test_batch_ids = []
     scripts_to_run = []
     for test_image_id in test_image_ids:
@@ -902,15 +909,15 @@ def build_init_rotational_networks():
         if test_batch_id not in test_batch_ids:
             test_batch_ids.append(test_batch_id)
 
-    for seed_image_id in seed_image_ids:
-        filedata = []
-        seed_images = seed_image_data[int(seed_image_id / 100)]
-        for image_id in seed_images:
-            test_image_id = seed_image_id + image_id
-            filename = get_filename_from(test_image_id)
-            filedata.append([test_image_id, filename, 0])
-        #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
-        #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
+    # for seed_image_id in seed_image_ids:
+    #     filedata = []
+    #     seed_images = seed_image_data[int(seed_image_id / 100)]
+    #     for image_id in seed_images:
+    #         test_image_id = seed_image_id + image_id
+    #         filename = get_filename_from(test_image_id)
+    #         filedata.append([test_image_id, filename, 0])
+    #     #create_single_lmdb(seed_image_id, filedata, 0, True, images_per_angle)
+    #     #run_script(train_dir + str(seed_image_id) + '/train-single-coin-lmdbs.sh')
     #     for test_batch_id in test_batch_ids:
     #         filename = test_dir + str(test_batch_id) + '/' + str(seed_image_id) + '.dat'
     #         if os.path.isfile(filename):
@@ -920,11 +927,12 @@ def build_init_rotational_networks():
     #                 continue
     #         create_test_script(seed_image_id,test_batch_id,True)
     #         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
-    #
-    #     run_scripts(scripts_to_run,max_workers=3)
-    #
-    # read_test(test_batch_ids,seed_image_ids)
-    #image_set.remove_angles_for_dates_in_all_results(data_dir)
+    # run_scripts(scripts_to_run,max_workers=3)
+
+    read_test(test_batch_ids,seed_image_ids)
+    #Then combine the seeds...
+    image_set.remove_angles_for_dates_in_all_results(data_dir)
+
     read_all_results(0, seeds_share_test_images=False, remove_widened_seeds=True)
     multi_point_error_test_image_ids, coin_angles, total_coin_results = get_errors_and_angles(True)
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,multi_point_error_test_image_ids,True)
