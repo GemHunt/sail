@@ -509,12 +509,18 @@ def link_seed_by_graph(seed_id, cut_off, min_connections, max_depth):
         print 'Not enough seeds found'
 
 
-def get_errors_and_angles(for_dates, min_good_images_per_seed= 10, angle_tolerance=15):
-    #def get_errors_and_angles(min_good_images_per_seed= 30, angle_tolerance=6):
+def get_errors_and_angles(for_dates):
     # Yes this function is doing too much!
     # Find all test_image_ids that don't match the major class
     # Find all test_image_ids that the angle is off where the major class is correct
     # Find the average good angles
+
+    if for_dates:
+        min_good_images_per_seed= 10
+        angle_tolerance=15
+    else:
+        min_good_images_per_seed= 30
+        angle_tolerance=6
 
     seeds = pickle.load(open(data_dir + 'seed_data.pickle', "rb"))
     coin_results = {}
@@ -610,20 +616,21 @@ def get_errors_and_angles(for_dates, min_good_images_per_seed= 10, angle_toleran
                         print 'Same seed ids:',coin_id, major_seed_ids[coin_id], major_seed_ids[coin_id+3]
         print 'same_seed_count:',same_side_seed_count
 
-    rotation_error_coin_ids = get_rotation_error_coin_ids(average_coin_angles)
-    print 'rotation_error count:', len(rotation_error_coin_ids)
-    for coin_id in rotation_error_coin_ids:
-        bad_coin_ids.add(coin_id)
-        bad_coin_ids.add(coin_id + 3)
+        rotation_error_coin_ids = get_rotation_error_coin_ids(average_coin_angles)
 
-    for coin_id, values in coin_results.iteritems():
-        if coin_id in bad_coin_ids:
-            for test_values in values:
-                test_image_id = test_values[0]
-                error_test_image_ids.append(test_image_id)
-            if coin_id in average_coin_angles.iterkeys():
-                del average_coin_angles[coin_id]
-        all_error_test_image_ids.extend(error_test_image_ids)
+        print 'rotation_error count:', len(rotation_error_coin_ids)
+        for coin_id in rotation_error_coin_ids:
+            bad_coin_ids.add(coin_id)
+            bad_coin_ids.add(coin_id + 3)
+
+        for coin_id, values in coin_results.iteritems():
+            if coin_id in bad_coin_ids:
+                for test_values in values:
+                    test_image_id = test_values[0]
+                    error_test_image_ids.append(test_image_id)
+                if coin_id in average_coin_angles.iterkeys():
+                    del average_coin_angles[coin_id]
+            all_error_test_image_ids.extend(error_test_image_ids)
 
     print 'bad_angle_grand_total:', bad_angle_grand_total, 'bad_seed_grand_total:', bad_seed_grand_total, 'bad_coin_id_grand_total:' ,len(bad_coin_ids)
     return sorted(list(set(all_error_test_image_ids))), average_coin_angles,total_coin_results
@@ -696,7 +703,7 @@ def get_rotation_error_coin_ids(coin_angles):
             rotation_error_coin_ids.append(coin_id)
     return rotation_error_coin_ids
 
-def get_ground_truth_designs(total_coin_results):
+def get_ground_truth_designs(total_coin_results,for_dates):
     #ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
     ground_truth_designs = {}
     for seed_id, values in total_coin_results.iteritems():
@@ -706,7 +713,8 @@ def get_ground_truth_designs(total_coin_results):
         if result > ground_truth_designs[coin_id][1]:
             ground_truth_designs[coin_id] = [seed_id, result, 0]
 
-    return ground_truth_designs
+    if for_dates:
+        return ground_truth_designs
 
 
     # for coin_id, values in ground_truth_designs.iteritems():
@@ -862,7 +870,7 @@ def run_multi_point():
     # image_set.read_results(0, data_dir, seeds_share_test_images=False,remove_coin_ids=good_coin_ids)
 
     image_set.read_results(0, data_dir, seeds_share_test_images=False)
-    multi_point_error_test_image_ids, coin_angles,total_coin_results = get_errors_and_angles()
+    multi_point_error_test_image_ids, coin_angles,total_coin_results = get_errors_and_angles(False)
     print total_coin_results
 
     # Create a composite image for dates:
@@ -871,9 +879,9 @@ def run_multi_point():
 
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None, multi_point_error_test_image_ids, True)
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,[], True)
-    #ground_truth_designs = get_ground_truth_designs(total_coin_results)
+    ground_truth_designs = get_ground_truth_designs(total_coin_results,for_dates=False)
     #image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125, 50, 10,coin_angles,ground_truth_designs,False,True,True)
-    image_set.create_date_composite_image(crop_dir, data_dir, 1100, 200000, coin_angles,False,True)
+    image_set.create_date_composite_image(crop_dir, data_dir, 1100, 200000, coin_angles,ground_truth_designs,False,True)
 
 def build_init_rotational_networks():
     # This function is meant to be edited and run manually for now.
@@ -929,14 +937,14 @@ def build_init_rotational_networks():
     #         scripts_to_run.append(test_dir + str(test_batch_id) + '/test-' + str(seed_image_id) + '.sh')
     # run_scripts(scripts_to_run,max_workers=3)
 
-    read_test(test_batch_ids,seed_image_ids)
+    #read_test(test_batch_ids,seed_image_ids)
     #Then combine the seeds...
-    image_set.remove_angles_for_dates_in_all_results(data_dir)
-
+    #image_set.remove_angles_for_dates_in_all_results(data_dir)
     read_all_results(0, seeds_share_test_images=False, remove_widened_seeds=True)
     multi_point_error_test_image_ids, coin_angles, total_coin_results = get_errors_and_angles(True)
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,multi_point_error_test_image_ids,True)
-    ground_truth_designs = get_ground_truth_designs(total_coin_results)
-    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125,6,10,coin_angles,ground_truth_designs,True,True,False,True)
+    ground_truth_designs = get_ground_truth_designs(total_coin_results,for_dates=True)
+    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125,600,10,coin_angles,ground_truth_designs,True,True,False,True)
 
+#run_multi_point()
 build_init_rotational_networks()

@@ -403,6 +403,7 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
     results = results_dict
     coin_id_seed_id = {}
     images_by_seed = {}
+    image_ids = []
 
     for coin_id, values in ground_truth_designs.iteritems():
         seed_image_id = values[0]
@@ -416,14 +417,13 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
         angle = 0
         if coin_id in coin_angles.iterkeys():
             angle = coin_angles[coin_id]
-        if for_dates and 10 < angle < 350:
-            continue
         images_by_seed[seed_image_id].append([image_id, result, angle])
 
 
     for seed_image_id, values in images_by_seed.iteritems():
         images = []
         rotated_crop = ci.get_rotated_crop(crop_dir,  get_image_id(seed_image_id,show_back) , crop_size, 0)
+
         if rotated_crop is None:
             continue
         images.append(rotated_crop)
@@ -432,6 +432,8 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
         for image_id, max_value, angle in sorted_results:
             crop = ci.get_rotated_crop(crop_dir, get_image_id(image_id,show_back), crop_size, angle)
             font = cv2.FONT_HERSHEY_SIMPLEX
+            if (image_id / 100)*100 == seed_image_id:
+                cv2.putText(crop, 'SEED', (4, 55), font, .7, (0, 255, 0), 2)
             cv2.putText(crop, str(max_value)[0:5], (4, 20), font, .7, (0, 255, 0), 2)
             cv2.putText(crop, str(get_image_id(image_id,show_back)/100)[0:4], (4, 90), font, .7, (0, 255, 0), 2)
             images.append(crop)
@@ -440,8 +442,11 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
             rows_to_pass = calc_rows
         else:
             rows_to_pass = rows
-        composite_image = ci.get_composite_image(images, rows, cols)
-        cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+        composite_image = ci.get_composite_image(images, rows_to_pass, cols)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(8) + '.png', composite_image)
+        image_ids.append(str(seed_image_id).zfill(8))
+
+    create_html(sorted(image_ids),html_dir + 'index.html')
     return
 
 
@@ -451,7 +456,6 @@ def create_composite_image_total_result(crop_dir, data_dir, crop_size, rows, col
     clean_dir(html_dir)
     results = results_dict
     coin_id_seed_id = {}
-
     for seed_image_id, seed_values in results.iteritems():
         images = []
         results = []
@@ -478,6 +482,7 @@ def create_composite_image_total_result(crop_dir, data_dir, crop_size, rows, col
 
         composite_image = ci.get_composite_image(images, rows, cols)
         cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
+
     return
 
 
@@ -598,7 +603,7 @@ def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_imag
 # pickle.dump(coin_id_seed_id, open(data_dir + 'ground_truth_coin_ids.pickle', "wb"))
 
 
-def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,coin_angles,only_show_one_image,save_files):
+def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,coin_angles,ground_truth_designs,only_show_one_image,save_files):
     #todo:OK how are heads_date_angle and date_center_offset releated?
     #I think this is only one angle.
 
@@ -624,12 +629,19 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,co
     images = []
     results = []
 
-    for image_id, values in seed_values.iteritems():
-        max_value, angle = values
-        coin_id = image_id / 100
-        if coin_id in coin_angles:
-            results.append([image_id, max_value, angle])
-    sorted_results = sorted(results, key=lambda result: result[0], reverse=False)
+    if save_files:
+        sorted_results = []
+        for coin_id, angle in coin_angles.iteritems():
+            if ground_truth_designs[coin_id][0] == seed_image_id:
+                for image_id in range(0,57):
+                    sorted_results.append([(coin_id*100) + image_id, 0, angle])
+    else:
+        for image_id, values in seed_values.iteritems():
+            max_value, angle = values
+            coin_id = image_id / 100
+            if coin_id in coin_angles:
+                results.append([image_id, max_value, angle])
+        sorted_results = sorted(results, key=lambda result: result[0], reverse=False)
 
     count = 0
     for image_id, max_value, angle in sorted_results:
@@ -655,9 +667,7 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,co
         date_crop = crop[center_x - crop_radius:center_x + crop_radius, center_y - crop_radius:center_y + crop_radius]
         rotated_date_crop = ci.rotate(date_crop, coin_angle - seed_id_100_angle, crop_radius, crop_radius, crop_radius * 2,
                                       crop_radius * 2)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(rotated_date_crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
-        cv2.circle(rotated_date_crop, (crop_radius, crop_radius), 2, (0, 0, 255), 1)
+
         crop_rows, crop_cols, channels = rotated_date_crop.shape
         if crop_rows != crop_cols:
             print image_id, crop_rows, crop_cols
@@ -670,6 +680,9 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,co
                 os.makedirs(dir)
             cv2.imwrite(dir + str(image_id).zfill(7)  + '.png',rotated_date_crop)
         else:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            #cv2.putText(rotated_date_crop, str(image_id)[0:5], (10, 90), font, .7, (0, 255, 0), 2)
+            cv2.circle(rotated_date_crop, (crop_radius, crop_radius), 1, (0, 0, 255), 1)
             images.append(rotated_date_crop)
         count += 1
 
@@ -680,6 +693,19 @@ def create_date_composite_image(crop_dir, data_dir, seed_image_id, max_images,co
 
     print count, 'Date images written'
 
+
+def create_html(image_ids, filename):
+    index = []
+    index.append('<html>\n')
+    index.append('<body>\n')
+    for image_id in image_ids:
+        index.append('<p><img src="' + str(image_id) + '.png"></a></p>\n')
+    index.append('</body>\n')
+    index.append('</html>\n')
+    file = open(filename, 'w')
+
+    for item in index:
+        file.write(item)
 
 def create_composite_image(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids):
     html_dir = data_dir + 'html/'
