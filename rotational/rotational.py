@@ -665,7 +665,7 @@ def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
     for test_batch_id,filedata in test_batch_filedata.iteritems():
         lmdb_dir = test_dir + str(test_batch_id) + '/'
         calling_args.append([filedata, lmdb_dir, images_per_angle])
-        #create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, False, False)
+        create_lmdb_rotate_whole_image.create_lmdbs(filedata, lmdb_dir, images_per_angle, False, False)
         for image_id in seed_image_ids:
             shell_filenames.append(create_test_script(image_id,test_batch_id))
 
@@ -703,19 +703,40 @@ def get_rotation_error_coin_ids(coin_angles):
             rotation_error_coin_ids.append(coin_id)
     return rotation_error_coin_ids
 
-def get_ground_truth_designs(total_coin_results,for_dates):
-    #ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
-    ground_truth_designs = {}
+
+def get_ground_truth_dates(total_coin_results):
+    #ground_truth_dates = pickle.load(open(data_dir + 'get_ground_truth_dates.pickle', "rb"))
+    ground_truth_date_dict = {}
+    for seed_id, values in total_coin_results.iteritems():
+       for coin_id, result in values.iteritems():
+        if coin_id not in ground_truth_date_dict.iterkeys():
+            ground_truth_date_dict[coin_id] = [seed_id, 0]
+        if result > ground_truth_date_dict[coin_id][1]:
+            ground_truth_date_dict[coin_id] = [seed_id, result]
+
+    #it bugs me I am not using a more pythonic way here:
+    ground_truth_date_array = []
+    for coin_id, values in ground_truth_date_dict.iteritems():
+        seed_id = values[0]
+        result = values[1]
+        ground_truth_date_array.append([seed_id,coin_id, result,0,False,False])
+
+    ground_truth_date_array = sorted(ground_truth_date_array, key=lambda x: x[2],reverse = True)
+    ground_truth_date_array = sorted(ground_truth_date_array, key=lambda x: x[0])
+
+    pickle.dump(ground_truth_date_array, open(data_dir + 'ground_truth_dates.pickle', "wb"))
+    return ground_truth_date_array
+
+
+
+def get_ground_truth_designs(total_coin_results):
+    ground_truth_designs = pickle.load(open(data_dir + 'ground_truth_designs.pickle', "rb"))
     for seed_id, values in total_coin_results.iteritems():
        for coin_id, result in values.iteritems():
         if coin_id not in ground_truth_designs.iterkeys():
             ground_truth_designs[coin_id] = [0,0,0]
         if result > ground_truth_designs[coin_id][1]:
             ground_truth_designs[coin_id] = [seed_id, result, 0]
-
-    if for_dates:
-        return ground_truth_designs
-
 
     # for coin_id, values in ground_truth_designs.iteritems():
     #     seed_id = values[0]
@@ -773,7 +794,7 @@ def get_ground_truth_designs(total_coin_results,for_dates):
         if coin_id in markto:
             ground_truth_designs[coin_id] = [0, 0, 1]
 
-    #pickle.dump(ground_truth_designs, open(data_dir + 'ground_truth_designs.pickle', "wb"))
+    pickle.dump(ground_truth_designs, open(data_dir + 'ground_truth_designs.pickle', "wb"))
     return  ground_truth_designs
 
 # Manually run and edit functions below:   ****************************************
@@ -908,7 +929,7 @@ def build_init_rotational_networks():
 
     test_image_ids = pickle.load(open(data_dir + 'test_image_ids.pickle', "rb"))
 
-    # create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
+    #create_test_lmdb_batches(test_image_ids,seed_image_ids,1)
     #for count in range(0,30):
     test_batch_ids = []
     scripts_to_run = []
@@ -939,12 +960,12 @@ def build_init_rotational_networks():
 
     #read_test(test_batch_ids,seed_image_ids)
     #Then combine the seeds...
-    #image_set.remove_angles_for_dates_in_all_results(data_dir)
+    image_set.remove_angles_for_dates_in_all_results(data_dir)
     read_all_results(0, seeds_share_test_images=False, remove_widened_seeds=True)
     multi_point_error_test_image_ids, coin_angles, total_coin_results = get_errors_and_angles(True)
     #image_set.create_composite_images(crop_dir, data_dir, 125, 40, 10, None,multi_point_error_test_image_ids,True)
-    ground_truth_designs = get_ground_truth_designs(total_coin_results,for_dates=True)
-    image_set.create_composite_image_ground_truth_designs(crop_dir, data_dir, 125,600,10,coin_angles,ground_truth_designs,True,True,False,True)
+    ground_truth_dates = get_ground_truth_dates(total_coin_results)
+    image_set.create_composite_image_ground_truth_dates(crop_dir, data_dir, 100,600,10,coin_angles,ground_truth_dates)
 
 #run_multi_point()
 build_init_rotational_networks()

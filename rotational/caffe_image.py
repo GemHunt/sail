@@ -64,6 +64,10 @@ def get_rotated_crop(crop_dir, crop_id, crop_size, angle):
         return None
 
     crop = cv2.resize(crop, (crop_size, crop_size), interpolation=cv2.INTER_AREA)
+    if angle == None:
+        angle = 0
+
+    print crop_dir, crop_id, crop_size, angle
     m = cv2.getRotationMatrix2D((crop_size / 2, crop_size / 2), angle, 1)
     cv2.warpAffine(crop, m, (crop_size, crop_size), crop, cv2.INTER_CUBIC)
     return crop

@@ -167,7 +167,7 @@ def remove_angles_for_dates_in_all_results(data_dir):
     for results in all_results:
         new_results = []
         for seed_image_id, image_id, angle, max_value in results:
-            if not (15 < angle < 345):
+            if not (3 < angle < 357):
                 new_results.append([seed_image_id, image_id, angle, max_value])
         new_all_results.append(new_results)
     pickle.dump(new_all_results, open(data_dir + 'all_results.pickle', "wb"))
@@ -397,7 +397,8 @@ def get_image_id(image_id,show_back):
     else:
         return image_id
 
-def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, rows, cols, coin_angles,ground_truth_designs,sort,show_marked,show_back,for_dates):
+def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, rows, cols, coin_angles,
+            ground_truth_designs,sort,show_marked,show_back,for_dates,total_result_cutoff):
     html_dir = data_dir + 'html/'
     clean_dir(html_dir)
     results = results_dict
@@ -410,6 +411,8 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
         result = values[1]
         marked = values[2]
         if not show_marked and marked == 1:
+            continue
+        if result < total_result_cutoff:
             continue
         image_id = (coin_id * 100) + 54
         if not seed_image_id in images_by_seed.iterkeys():
@@ -449,7 +452,51 @@ def create_composite_image_ground_truth_designs(crop_dir, data_dir, crop_size, r
     create_html(sorted(image_ids),html_dir + 'index.html')
     return
 
+def create_composite_image_ground_truth_dates(crop_dir, data_dir, crop_size, rows, cols, coin_angles,
+                                              ground_truth_dates):
+    html_dir = data_dir + 'html/'
+    clean_dir(html_dir)
+    images_by_seed = {}
+    image_ids = []
 
+    for seed_id,coin_id, result,labeled_date,bad_angle,bad_image in ground_truth_dates:
+        image_id = (coin_id * 100) + 54
+        if not seed_id in images_by_seed.iterkeys():
+            images_by_seed[seed_id] = []
+        angle = 0
+        if coin_id in coin_angles.iterkeys():
+            angle = coin_angles[coin_id]
+        images_by_seed[seed_id].append([image_id, result, angle])
+
+
+    for seed_image_id, values in images_by_seed.iteritems():
+        images = []
+        rotated_crop = ci.get_rotated_crop(crop_dir,  get_image_id(seed_image_id,False) , crop_size, 0)
+
+        if rotated_crop is None:
+            continue
+        images.append(rotated_crop)
+
+        sorted_results = sorted(values, key=lambda result: result[1], reverse=True)
+        for image_id, max_value, angle in sorted_results:
+            crop = ci.get_rotated_crop(crop_dir, get_image_id(image_id,False), crop_size, angle)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            if (image_id / 100)*100 == seed_image_id:
+                cv2.putText(crop, 'SEED', (4, 55), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(max_value)[0:5], (4, 20), font, .7, (0, 255, 0), 2)
+            cv2.putText(crop, str(get_image_id(image_id,False)/100)[0:4], (4, 90), font, .7, (0, 255, 0), 2)
+            images.append(crop)
+        calc_rows = int(len(images) / cols) + 1
+        if rows >= calc_rows:
+            rows_to_pass = calc_rows
+        else:
+            rows_to_pass = rows
+        composite_image = ci.get_composite_image(images, rows_to_pass, cols)
+        cv2.imwrite(html_dir + str(seed_image_id).zfill(8) + '.png', composite_image)
+        image_ids.append(str(seed_image_id).zfill(8))
+
+    create_html(sorted(image_ids),html_dir + 'index.html')
+    return
 
 def create_composite_image_total_result(crop_dir, data_dir, crop_size, rows, cols, coin_angles,total_coin_results):
     html_dir = data_dir + 'html/'
