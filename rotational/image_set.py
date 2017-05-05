@@ -3,6 +3,7 @@ import glob
 import math
 import os
 import shutil
+import imageio
 from collections import namedtuple
 
 import cv2
@@ -531,6 +532,24 @@ def create_composite_image_total_result(crop_dir, data_dir, crop_size, rows, col
         cv2.imwrite(html_dir + str(seed_image_id).zfill(5) + '.png', composite_image)
 
     return
+
+def create_composite_image_coin_id(coin_id, crop_dir, data_dir):
+    images = []
+    images_gif = []
+
+    for id in range(0,56):
+        image_id = coin_id * 100 + id
+        crop = ci.get_rotated_crop(crop_dir, image_id, 56, 0)
+        images.append(crop)
+        filename =  ci.get_filename_from(image_id,crop_dir)
+        images_gif.append(imageio.imread(filename))
+
+    composite_image = ci.get_composite_image(images, 8, 8)
+    cv2.imwrite(data_dir + str(coin_id) + '.png', composite_image)
+    imageio.mimsave(data_dir + str(coin_id) + '.gif', images_gif)
+
+    return
+
 
 
 def create_composite_images(crop_dir, data_dir, crop_size, rows, cols, seed_image_ids=None, remove_image_ids=None,
