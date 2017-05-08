@@ -47,8 +47,14 @@ def save_and_exit(labeled_dates,ground_truth_dates):
     sys.exit()
 
 
-def create_design_data_set(labeled_designs,design_crop_dir,image_dir):
+def create_design_data_set(labeled_designs,design_crop_dir,image_dir,test):
     labels = ['heads','tails']
+    if test:
+        pixels_to_jitter = 0
+        angles = 1
+    else:
+        pixels_to_jitter = 2
+        angles = 100
 
     for label in labels:
         dir = image_dir + label + '/'
@@ -56,16 +62,27 @@ def create_design_data_set(labeled_designs,design_crop_dir,image_dir):
             os.makedirs(dir)
 
     for coin_id, label in labeled_designs.iteritems():
+        before_rotate_size = 56
         for image_id in range(0,56):
             #dir = design_crop_dir + str(coin_id / 100) + '/'
-            filename =  str(coin_id).zfill(5) + str(image_id).zfill(2) + '.png'
             class_dir = image_dir + label + '/'
             #for angle in range(0,10):
+            filename = str(coin_id).zfill(5) + str(image_id).zfill(2) + '.png'
             image = cv2.imread(design_crop_dir + filename)
-            image = cv2.resize(image, (56, 56), interpolation=cv2.INTER_AREA)
-            cv2.imwrite(class_dir + filename,image)
+            image = cv2.resize(image, (before_rotate_size, before_rotate_size), interpolation=cv2.INTER_AREA)
+            for count in range(0,angles):
+                angle = random.random() * 360
+                center_x = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
+                center_y = before_rotate_size / 2 + (random.random() * pixels_to_jitter * 2) - pixels_to_jitter
+                rot_image = image.copy()
+                m = cv2.getRotationMatrix2D((center_x, center_y), angle, 1)
+                cv2.warpAffine(rot_image, m, (before_rotate_size, before_rotate_size), rot_image, cv2.INTER_CUBIC)
+                # This is hard coded for 28x28.
+                rot_image = cv2.resize(rot_image, (41, 41), interpolation=cv2.INTER_AREA)
+                rot_image = rot_image[6:34, 6:34]
+                rotated_filename = filename.replace('.png', str(count).zfill(2) + '.png')
+                cv2.imwrite(class_dir + rotated_filename,rot_image)
     sys.exit()
-
 
 def label_date():
     cv2.namedWindow("next")
@@ -166,8 +183,9 @@ def label_heads_tails():
     images = {}
     labeled_designs = {}
 
-    design_crop_dir = '/home/pkrush/data/cents-test/0/'
-    image_dir = '/home/pkrush/cent-designs/'
+    design_crop_dir = '/home/pkrush/data/cents-test/3/'
+    image_dir = '/home/pkrush/cent-designs4/'
+    test= False
 
     for filename in glob.iglob(design_crop_dir + '*54.png'):
         filenames.append([random.random(), filename])
@@ -225,9 +243,9 @@ def label_heads_tails():
                 break
 
             if key == ord("q"):
-                create_design_data_set(labeled_designs,design_crop_dir,image_dir)
+                create_design_data_set(labeled_designs,design_crop_dir,image_dir,test)
 
-    create_design_data_set(labeled_designs,design_crop_dir,image_dir)
+    create_design_data_set(labeled_designs,design_crop_dir,image_dir,test)
     cv2.destroyAllWindows()
 
 

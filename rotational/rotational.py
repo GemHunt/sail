@@ -656,8 +656,7 @@ def create_test_lmdb_batches(test_image_ids,seed_image_ids,images_per_angle):
         if test_batch_id not in test_batch_filedata.iterkeys():
             test_batch_filedata[test_batch_id] = []
             lmdb_dir = test_dir + str(test_batch_id) + '/'
-            if not os.path.exists(lmdb_dir):
-                os.makedirs(lmdb_dir)
+           r
         test_batch_filedata[test_batch_id].append([test_image_id, get_filename_from(test_image_id), 0])
 
     shell_filenames = []
