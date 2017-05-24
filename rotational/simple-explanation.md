@@ -11,8 +11,8 @@ Rotational Correlation to Build Self-Supervised Deep Learning Models
 * When using this I noticed side lighting angles were grouping in 60 degree window so it took many images to make a model. This is how I came up with using many lighting angles with LED lights.
  
 **Links:**
-https://github.com/GemHunt/sail has code, but I have to warn it’s overly complicated for demo code.
+* https://github.com/GemHunt/sail has code, but I have to warn it’s overly complicated for demo code.
  
-Example groupings:
-http://www.GemHunt.com/designs/
-http://www.GemHunt.com/dates/
+* Example groupings:
+* http://www.GemHunt.com/designs/
+* http://www.GemHunt.com/dates/
