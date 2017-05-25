@@ -18,7 +18,7 @@ This algo uses a standard classification convolutional neural network. You train
 * The angle_differance with the max total network output is the final result
  
 **Notes:**
-* I use this for coins, I can see it being used in all sorts of machine and robotic vision applications where the parts are very simalar. 
+* I use this for coins, I can see it being used in all sorts of machine and robotic vision applications where the parts are very similar. 
 * A more generic term would be graph based correlation. So this would include a positional correlation, which works the same as this, expect in X and Y. 
 * When using this I noticed side lighting angles were grouping in 60 degree window so it took many images to make a model. This is how I came up with using many lighting angles with LED lights.
  
