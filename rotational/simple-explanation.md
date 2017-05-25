@@ -1,5 +1,8 @@
 Rotational Correlation to Build Self-Supervised Deep Learning Models
  
+This algo uses a standard classification convolutional neural network. You train it on the rotated images of the same object. I call this the seed. Then you test it on rotated images of other objects. The output is the angular difference between the two objects and the total probability.
+
+
 **Benefits:**
 * Can be unsupervised or only require a few images to be labeled. 
 * You find the orientation in relation to the seed image
