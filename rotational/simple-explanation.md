@@ -9,8 +9,9 @@ This algorithm uses a standard classification convolutional neural network. You 
 * Works as a rejection tool, as it’s better at giving an answer of “this is not the part”, when you have an input that has never been seen before. This is harder to do with straight classification where overfitting can easily cause false confidence on unseen input. 
  
 **Usage:**
-* A seed model is trained with 360 classes
-* The seed model is then inferred(tested) with 360 rotations of the same image
+* A seed model is trained with 360 classes:
+* * Each class corresponds to a 1 degree different in rotation of the seed image
+* The seed model is then inferred(tested) with 360 rotations of a test coin
 * In all 360 tests: angle_differance = class result angle - test image angle 
 * Grouping by the angle_differance you total the network output to get max_total_result
 * The angle_differance with the max_total_result is the result for that seed
