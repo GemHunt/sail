@@ -966,8 +966,6 @@ def build_init_rotational_networks():
     ground_truth_dates = get_ground_truth_dates(total_coin_results)
     image_set.create_composite_image_ground_truth_dates(crop_dir, data_dir, 100,600,10,coin_angles,ground_truth_dates)
 
-
-
 #run_multi_point()
 #build_init_rotational_networks()
 image_set.create_composite_image_coin_id(11, crop_dir, data_dir)
