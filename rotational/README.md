@@ -1,11 +1,15 @@
 # rotational
 Self-Supervised Correlational Clustering Networks
-Feature detection & localization. Anomaly detection.
-(I don’t know what to call it! I keep changing the name. Regardless, it works great!)
 
-A fast tool to group coin designs and determine orientation angles with no manual labeling
+**A fast tool to group coin designs and determine orientation angles with no manual labeling**
+* Feature detection & localization. Anomaly detection.
 
-**Tasks:**
+A simple explaination of how rotational Correlational works:
+https://github.com/GemHunt/sail/blob/master/rotational/simple-explanation.md
+
+
+
+**So this is out of date!   Tasks:**
 * Document how this is done
 * Add in a train_id or something to manage test runs
 * Move hard coded vars to config file and manage with a train_id
